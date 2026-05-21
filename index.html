@@ -3584,8 +3584,8 @@
     const noAddress = !state.form.address || state.form.address.trim() === '';
     return `
       <button class="btn btn-save-ghl" onclick="saveDealToGhl(this)" ${noAddress ? 'disabled title="Enter an address in the property bar first"' : ''}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        Save to GHL
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        Send to Slack
       </button>
     `;
   }
