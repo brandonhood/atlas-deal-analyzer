@@ -1762,18 +1762,17 @@
       if (!el) return;
       el.value = state.form[key];
       el.addEventListener('input', () => {
-        const raw = el.value;
-        state.form[key] = (key === 'address') ? raw : (parseFloat(raw) || 0);
-        // In rental mode, As-Is doubles as the Purchase Price
-        if (key === 'asIsValue' && (state.mode === 'rental' || state.mode === 'brrrr')) {
-          state.form.purchasePrice = state.form.asIsValue;
-        }
-        renderSidebar();
-        // Re-render steps that show sqft-dependent or arv-dependent callouts
-        if (key === 'sqft') renderStep();
-        if (state.mode === 'rental' && state.step === 1) updateRentalEquityCallout();
-        if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
-      });
+          const raw = el.value;
+          state.form[key] = (key === 'address') ? raw : (parseFloat(raw) || 0);
+          if (key === 'asIsValue' && (state.mode === 'rental' || state.mode === 'brrrr')) {
+            state.form.purchasePrice = state.form.asIsValue;
+          }
+          renderSidebar();
+          if (key === 'sqft') renderStep();
+          if (key === 'address') renderStep();
+          if (state.mode === 'rental' && state.step === 1) updateRentalEquityCallout();
+          if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
+        });
     });
   }
 
