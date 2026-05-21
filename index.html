@@ -3515,7 +3515,7 @@
     buttonEl.innerHTML = '<span class="save-spinner"></span> Sending to #underwriting...';
 
     try {
-      if (ANALYZER_WEBHOOK_URL.includes('const ANALYZER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/2538153/4o8nnto/';')) {
+        if (ANALYZER_WEBHOOK_URL.includes('REPLACE_ME')) {
         // Dev mode — webhook not configured yet; show the payload instead
         await new Promise(r => setTimeout(r, 500));
         console.log('[Atlas Analyzer · DEV MODE] Webhook not configured. Payload preview:', payload);
