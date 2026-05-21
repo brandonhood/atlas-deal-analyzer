@@ -3404,7 +3404,7 @@
   // ============ SAVE TO GHL (Zapier webhook → Slack #underwriting) ============
   // Separate Zap from the Chrome extension's contact-summary push. This Zap handles deal-level math.
   // Replace this URL after creating the Zap (see hosting guide).
-  const ANALYZER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/const ANALYZER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/REPLACE_ME/REPLACE_ME/';';
+  const ANALYZER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/2538153/4o8nnto/';
 
   async function saveDealToGhl(buttonEl) {
     const c = calculate();
@@ -3515,7 +3515,7 @@
     buttonEl.innerHTML = '<span class="save-spinner"></span> Sending to #underwriting...';
 
     try {
-      if (ANALYZER_WEBHOOK_URL.includes('const ANALYZER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/REPLACE_ME/REPLACE_ME/';')) {
+      if (ANALYZER_WEBHOOK_URL.includes('const ANALYZER_WEBHOOK_URL = 'https://hooks.zapier.com/hooks/catch/2538153/4o8nnto/';')) {
         // Dev mode — webhook not configured yet; show the payload instead
         await new Promise(r => setTimeout(r, 500));
         console.log('[Atlas Analyzer · DEV MODE] Webhook not configured. Payload preview:', payload);
