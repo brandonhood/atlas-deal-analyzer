@@ -3332,9 +3332,8 @@
     renderReport();
     document.getElementById('form-view').classList.add('hidden');
     document.getElementById('report-view').classList.remove('hidden');
-    const subs = { wholesale: 'Wholesale Deal Analysis', novation: 'Novation Deal Analysis', rental: 'Investment Property Analysis' };
+    const subs = { wholesale: 'Wholesale Deal Analysis', novation: 'Novation Deal Analysis', brrrr: 'BRRRR Deal Analysis', rental: 'Investment Property Analysis' };
     document.getElementById('masthead-sub').textContent = subs[state.mode];
-    document.getElementById('masthead-meta').classList.add('hidden');
     document.getElementById('report-actions').classList.remove('hidden');
   }
 
@@ -3342,7 +3341,6 @@
     document.getElementById('form-view').classList.remove('hidden');
     document.getElementById('report-view').classList.add('hidden');
     document.getElementById('masthead-sub').textContent = 'Deal Analyzer · Wholesale · Novation · Rental';
-    document.getElementById('masthead-meta').classList.remove('hidden');
     document.getElementById('report-actions').classList.add('hidden');
   }
 
