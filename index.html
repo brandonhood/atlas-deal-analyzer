@@ -1495,9 +1495,15 @@
         <span class="property-bar-title">Subject Property</span>
         <span class="property-bar-hint">These inputs apply across every exit strategy.</span>
       </div>
-      <div class="field-group">
-        <label class="field-label">Property Address</label>
-        <input type="text" class="text-input" id="f-address" placeholder="123 Main St, Birmingham AL 35203">
+      <div class="field-grid-2" style="margin-bottom: 16px;">
+        <div>
+          <label class="field-label">Seller Name</label>
+          <input type="text" class="text-input" id="f-sellerName" placeholder="Shanara Mobley">
+        </div>
+        <div>
+          <label class="field-label">Property Address</label>
+          <input type="text" class="text-input" id="f-address" placeholder="6788 Langford St, Jacksonville FL 32219">
+        </div>
       </div>
       <div class="field-grid-4">
         <div>
@@ -1629,8 +1635,7 @@
     step: 1,
     form: {
       // Property (uniform)
-      address: "", beds: 3, baths: 2, sqft: 1400, yearBuilt: 1985,
-
+      address: "", sellerName: "", beds: 3, baths: 2, sqft: 1400, yearBuilt: 1985,
       // Values
       arv: 220000,
       asIsValue: 180000,
@@ -1754,13 +1759,13 @@
 
   // Hook up always-visible property-bar inputs (they persist across modes)
   function bindPropertyBar() {
-    ['address','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance'].forEach(key => {
+    ['address','sellerName','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance'].forEach(key => {
       const el = document.getElementById('f-' + key);
       if (!el) return;
       el.value = state.form[key];
       el.addEventListener('input', () => {
           const raw = el.value;
-          state.form[key] = (key === 'address') ? raw : (parseFloat(raw) || 0);
+          state.form[key] = (key === 'address' || key === 'sellerName') ? raw : (parseFloat(raw) || 0);
           if (key === 'asIsValue' && (state.mode === 'rental' || state.mode === 'brrrr')) {
             state.form.purchasePrice = state.form.asIsValue;
           }
@@ -3369,8 +3374,11 @@
       purchase:      v => state.form.purchasePrice = parseFloat(v) || state.form.purchasePrice,
       monthly_rent:  v => state.form.monthlyRent = parseFloat(v) || state.form.monthlyRent,
       contact_id:    v => ghlContext.contactId = decodeURIComponent(v),
-      contact_name:  v => ghlContext.contactName = decodeURIComponent(v),
-    };
+      contact_name:  v => {
+        const decoded = decodeURIComponent(v);
+        ghlContext.contactName = decoded;
+        state.form.sellerName = decoded;  // also populate the visible field
+      },
     let anyApplied = false;
     for (const [key, raw] of params.entries()) {
       const fn = map[key];
@@ -3584,6 +3592,32 @@
       </button>
     `;
   }
+
+ // ============ DYNAMIC PRINT TITLE ============
+  // Browsers use document.title as the default PDF filename. Set it dynamically
+  // before printing so saved PDFs are named "AHB Deal Analyzer - Seller Name - Street Address"
+  const ORIGINAL_TITLE = document.title;
+
+  function buildPrintTitle() {
+    const f = state.form;
+    // Seller name from the visible field (works for both GHL prefill and manual entry)
+    const sellerName = (f.sellerName || ghlContext.contactName || '').trim();
+    // Street address only — everything before the first comma
+    const fullAddress = (f.address || '').trim();
+    const streetAddress = fullAddress.split(',')[0].trim();
+
+    const parts = ['AHB Deal Analyzer'];
+    if (sellerName) parts.push(sellerName);
+    if (streetAddress) parts.push(streetAddress);
+    return parts.join(' - ');
+  }
+
+  window.addEventListener('beforeprint', () => {
+    document.title = buildPrintTitle();
+  });
+  window.addEventListener('afterprint', () => {
+    document.title = ORIGINAL_TITLE;
+  });
 
   ingestUrlParams();
   bindPropertyBar();
