@@ -1556,7 +1556,7 @@
           <input type="number" class="num-input" id="f-yearBuilt" placeholder="1970">
         </div>
       </div>
-      <div class="field-grid-3" style="margin-bottom: 0; margin-top: 4px;">
+      <div class="field-grid-4" style="margin-bottom: 0; margin-top: 4px;">
         <div>
           <label class="field-label">After Repair Value (ARV)</label>
           <div class="input-money"><input type="number" class="num-input" id="f-arv" placeholder="250,000"></div>
@@ -1570,6 +1570,11 @@
           <label class="field-label">Mortgage Balance</label>
           <div class="input-money"><input type="number" class="num-input" id="f-mortgageBalance" placeholder="0"></div>
           <div class="field-hint">Seller's payoff at close</div>
+        </div>
+        <div>
+          <label class="field-label">Rent Rate</label>
+          <div class="input-money"><input type="number" class="num-input" id="f-cfRentIncome" placeholder="1,500"></div>
+          <div class="field-hint">Market rent · feeds wrap, lease &amp; rental</div>
         </div>
       </div>
     </div>
@@ -1760,12 +1765,12 @@
       // ===================== CREATIVE FINANCE =====================
       cfAcqType: 'subto',            // 'subto' | 'seller_finance' | 'hybrid' — SubTo is the default
       // Seller-finance note (seller_finance, or 2nd position in hybrid)
-      cfSfAmount: 0, cfSfRate: 0, cfSfMonths: 360, cfSfBalloon: 0,
+      cfSfAmount: 0, cfSfRate: 0, cfSfMonths: 360, cfSfBalloon: 0, cfSfInterestOnly: false,
       // SubTo note (subto + hybrid)
       cfSubAmount: 0, cfSubMonthsRem: 0, cfSubRate: 0, cfSubPI: 0,
       // Entry fee (cash to acquire)
       cfCashToSeller: 0, cfArrearsLiens: 0, cfCostOfAcq: 15000,
-      cfClosingCosts: 0, cfRenovation: 0, cfMarketing: 500, cfAccelInsurance: 0,
+      cfClosingCosts: 0, cfMaintOverride: 0, cfRenovation: 0, cfMarketing: 500, cfAccelInsurance: 0,
       // Entry-fee financing — private lender note (funds the entry fee)
       cfPlOn: false, cfPlYears: 5, cfPlRate: 10, cfPlInterestOnly: true,
       // Monthly carry
@@ -1827,7 +1832,7 @@
 
   // Hook up always-visible property-bar inputs (they persist across modes)
   function bindPropertyBar() {
-    ['address','sellerName','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance'].forEach(key => {
+    ['address','sellerName','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance','cfRentIncome'].forEach(key => {
       const el = document.getElementById('f-' + key);
       if (!el) return;
       el.value = (state.form[key] == null) ? '' : state.form[key];
@@ -1847,6 +1852,7 @@
           renderSidebar();
           if (key === 'sqft') renderStep();
           if (key === 'address') renderStep();
+          if (key === 'cfRentIncome' && state.mode === 'creative') renderStep();
           if (state.mode === 'rental' && state.step === 1) updateRentalEquityCallout();
           if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
         });
@@ -1864,7 +1870,7 @@
     if (key === 'includeAtlasFee') renderStep();
     if (key === 'brrrrAcqType') renderStep();
     if (state.mode === 'creative') renderCreativeSummary();
-    if (key === 'cfAcqType' || key === 'cfActiveExit' || key === 'cfPlOn' || key === 'cfPlInterestOnly') renderStep();
+    if (key === 'cfAcqType' || key === 'cfActiveExit' || key === 'cfPlOn' || key === 'cfPlInterestOnly' || key === 'cfSfInterestOnly') renderStep();
   }
 
   function getRehab(mode) {
@@ -1972,8 +1978,8 @@
     return principal * ((annualRatePct || 0) / 100 / 12);
   }
   function cfSellerFinancePayment(f) {
-    // Balloon set -> interest-only until the balloon; otherwise fully amortizing
-    if (f.cfSfBalloon && f.cfSfBalloon > 0) return cfInterestOnly(f.cfSfAmount, f.cfSfRate);
+    // Interest-only when explicitly toggled or when a balloon is set; otherwise fully amortizing
+    if (f.cfSfInterestOnly || (f.cfSfBalloon && f.cfSfBalloon > 0)) return cfInterestOnly(f.cfSfAmount, f.cfSfRate);
     return cfAmortizedPayment(f.cfSfAmount, f.cfSfRate, f.cfSfMonths);
   }
   function cfNotePayment(f) {
@@ -2016,7 +2022,8 @@
 
     // Purchase price = acquisition note(s) + cash to seller. Closing auto-estimates at 1.5%.
     const purchasePrice = totalDebt + (f.cfCashToSeller || 0);
-    const closing = purchasePrice * 0.015;
+    const autoClosing = purchasePrice * 0.015;                                 // 1.5% estimate
+    const closing = (f.cfClosingCosts > 0) ? f.cfClosingCosts : autoClosing;   // editable override
 
     // Fixed cash portion of the entry fee (everything except the 2-month maintenance reserve)
     const baseCash = (f.cfCashToSeller||0) + (f.cfArrearsLiens||0) + (f.cfCostOfAcq||0)
@@ -2028,21 +2035,32 @@
     // A private lender note can fund the whole entry fee. The entry fee includes a maintenance
     // reserve = 2x carry, and carry includes the PL interest, so the entry fee is self-referential:
     //   entryFee = baseCash + 2*(baseCarry + a*entryFee)  =>  entryFee = (baseCash + 2*baseCarry)/(1 - 2a)
-    let entryFee, plAmount, plPayment;
-    if (f.cfPlOn) {
-      const a = cfPlPaymentFactor(f);
+    // Maintenance reserve auto = 2x monthly carry, but a fixed override can replace it.
+    // Auto + PL funding is self-referential (carry includes PL interest, reserve = 2x carry):
+    //   entryFee = (baseCash + 2*baseCarry)/(1 - 2a). A fixed override breaks the loop:
+    //   entryFee = baseCash + override.
+    const a = f.cfPlOn ? cfPlPaymentFactor(f) : 0;
+    const maintOverridden = (f.cfMaintOverride > 0);
+    let entryFee, plAmount, plPayment, maintenance;
+    if (maintOverridden) {
+      maintenance = f.cfMaintOverride;
+      entryFee    = baseCash + maintenance;
+      plAmount    = f.cfPlOn ? entryFee : 0;
+      plPayment   = f.cfPlOn ? a * entryFee : 0;
+    } else if (f.cfPlOn) {
       const denom = Math.max(1 - 2 * a, 0.0001);
-      entryFee  = (baseCash + 2 * baseCarry) / denom;
-      plAmount  = entryFee;
-      plPayment = a * entryFee;
+      entryFee    = (baseCash + 2 * baseCarry) / denom;
+      plAmount    = entryFee;
+      plPayment   = a * entryFee;
+      maintenance = 2 * (baseCarry + plPayment);
     } else {
-      entryFee  = baseCash + 2 * baseCarry;
-      plAmount  = 0;
-      plPayment = 0;
+      entryFee    = baseCash + 2 * baseCarry;
+      plAmount    = 0;
+      plPayment   = 0;
+      maintenance = 2 * baseCarry;
     }
     const totalDebtService = acqNotePayment + plPayment;   // monthly debt the exits must cover
     const monthlyCarry = baseCarry + plPayment;
-    const maintenance  = monthlyCarry * 2;
     const notePayment  = acqNotePayment;                   // alias: acquisition note only
     const piti = acqNotePayment + (f.cfTaxesMonthly||0) + (f.cfInsuranceMonthly||0);  // P&I + taxes + insurance
 
@@ -3053,7 +3071,11 @@
           <input type="number" class="num-input" value="${f.cfSfBalloon}" oninput="update('cfSfBalloon', parseInt(this.value)||0)">
           <div class="field-hint">0 = none · set → interest-only to balloon</div>
         </div>
-      </div>`;
+      </div>
+      <label class="checkbox-row" style="margin-top:14px;">
+        <input type="checkbox" ${f.cfSfInterestOnly ? 'checked' : ''} onchange="update('cfSfInterestOnly', this.checked)">
+        <span>Interest-only payments${f.cfSfInterestOnly ? '' : ' · amortized over the term'}</span>
+      </label>`;
     const subBlock = `
       <div class="subsection-title" style="margin-top:18px;">SubTo Note · existing mortgage taken over</div>
       <div class="field-grid-2">
@@ -3144,9 +3166,9 @@
           <div class="field-hint">Atlas fee / assignment · default $15,000</div>
         </div>
         <div>
-          <label class="field-label">Closing Costs <span style="color:var(--ink-4);font-weight:400;">· auto</span></label>
-          <div class="input-money"><input type="number" class="num-input" id="cf-closing-val" value="${Math.round(cr.closing)}" disabled style="background:var(--surface-alt);color:var(--ink-3);"></div>
-          <div class="field-hint">1.5% of purchase price (note + cash to seller)</div>
+          <label class="field-label">Closing Costs <span id="cf-closing-tag" style="color:var(--ink-4);font-weight:400;">${f.cfClosingCosts > 0 ? '· custom' : '· auto'}</span></label>
+          <div class="input-money"><input type="number" class="num-input" id="cf-closing-val" value="${Math.round(cr.closing)}" oninput="update('cfClosingCosts', parseFloat(this.value)||0)"></div>
+          <div class="field-hint" id="cf-closing-hint">${f.cfClosingCosts > 0 ? 'Custom override · clear the field to revert to auto' : 'Auto 1.5% of purchase price · type to override'}</div>
         </div>
         <div>
           <label class="field-label">Renovation</label>
@@ -3159,9 +3181,9 @@
           <div class="field-hint">Cost to find buyer/tenant · default $500</div>
         </div>
         <div>
-          <label class="field-label">Maintenance Reserve <span style="color:var(--ink-4);font-weight:400;">· auto</span></label>
-          <div class="input-money"><input type="number" class="num-input" id="cf-maint-val" value="${Math.round(cr.maintenance)}" disabled style="background:var(--surface-alt);color:var(--ink-3);"></div>
-          <div class="field-hint" id="cf-maint-hint">2 × monthly carry (${fmt(cr.monthlyCarry)}/mo)</div>
+          <label class="field-label">Maintenance Reserve <span id="cf-maint-tag" style="color:var(--ink-4);font-weight:400;">${f.cfMaintOverride > 0 ? '· custom' : '· auto'}</span></label>
+          <div class="input-money"><input type="number" class="num-input" id="cf-maint-val" value="${Math.round(cr.maintenance)}" oninput="update('cfMaintOverride', parseFloat(this.value)||0)"></div>
+          <div class="field-hint" id="cf-maint-hint">${f.cfMaintOverride > 0 ? 'Custom override · clear the field to revert to auto' : `2 × monthly carry (${fmt(cr.monthlyCarry)}/mo) · type to override`}</div>
         </div>
         <div>
           <label class="field-label">Acceleration Insurance <span style="color:var(--ink-4);font-weight:400;">· separate</span></label>
@@ -3262,8 +3284,9 @@
     const rentalInputs = `
       <div class="field-grid-2">
         <div>
-          <label class="field-label">Monthly Rent</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentIncome}" oninput="update('cfRentIncome', parseFloat(this.value)||0)"></div>
+          <label class="field-label">Monthly Rent <span style="color:var(--ink-4);font-weight:400;">· from Subject Property</span></label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentIncome || ''}" disabled style="background:var(--surface-alt);color:var(--ink-3);"></div>
+          <div class="field-hint">Set the Rent Rate field up top</div>
         </div>
         <div>
           <label class="field-label">Other Income</label>
@@ -3341,16 +3364,11 @@
     if (!cr) return '';
     if (state.step === 1) {
       return `<div class="stats-band" style="margin-top:22px;">
-        <div><div class="stat-label">Total Note Payment</div><div class="stat-val">${fmt(cr.notePayment)}</div></div>
         <div><div class="stat-label">Total Debt</div><div class="stat-val">${fmt(cr.totalDebt)}</div></div>
-        <div><div class="stat-label">Note + Servicing</div><div class="stat-val">${fmt(cr.notePayment + f.cfNoteServicing)}</div></div>
-      </div>
-      <div class="stats-band" style="margin-top:12px;">
         <div><div class="stat-label">PITI</div><div class="stat-val">${fmt(cr.piti)}</div></div>
         <div><div class="stat-label">Monthly Carry</div><div class="stat-val">${fmt(cr.monthlyCarry)}</div></div>
-        <div><div class="stat-label">Maintenance Reserve</div><div class="stat-val">${fmt(cr.maintenance)}</div></div>
       </div>
-      <p class="section-sub" style="margin-top:10px;font-size:12px;">PITI = note P&I + taxes + insurance. Monthly carry adds HOA and servicing; the maintenance reserve = 2 × carry, carried into your entry fee on the next step.</p>`;
+      <p class="section-sub" style="margin-top:10px;font-size:12px;">Total Debt is the balance you take over. PITI = note P&I + taxes + insurance. Monthly Carry is your full hold cost — PITI plus HOA and servicing — that each exit has to cover.</p>`;
     }
     if (state.step === 2) {
       return `<div class="equity-callout good" style="margin-top:6px;">
@@ -3446,9 +3464,15 @@
     const cr = calculate().creative; if (!cr) return;
     const setVal  = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
     const setText = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-    setVal('cf-closing-val', Math.round(cr.closing));
-    setVal('cf-maint-val', Math.round(cr.maintenance));
-    setText('cf-maint-hint', `2 × monthly carry (${fmt(cr.monthlyCarry)}/mo)`);
+    const f = state.form;
+    const closingCustom = f.cfClosingCosts > 0;
+    if (!closingCustom) setVal('cf-closing-val', Math.round(cr.closing));   // auto mode only — don't fight typing
+    setText('cf-closing-tag', closingCustom ? '· custom' : '· auto');
+    setText('cf-closing-hint', closingCustom ? 'Custom override · clear the field to revert to auto' : 'Auto 1.5% of purchase price · type to override');
+    const maintCustom = f.cfMaintOverride > 0;
+    if (!maintCustom) setVal('cf-maint-val', Math.round(cr.maintenance));
+    setText('cf-maint-tag', maintCustom ? '· custom' : '· auto');
+    setText('cf-maint-hint', maintCustom ? 'Custom override · clear the field to revert to auto' : `2 × monthly carry (${fmt(cr.monthlyCarry)}/mo) · type to override`);
     setText('cf-pl-amount', fmt(cr.plAmount));
     setText('cf-pl-payment', `${fmt(cr.plPayment)}/mo`);
   }
@@ -3552,7 +3576,7 @@
           ${f.cfCashToSeller>0?`<div class="row"><span class="row-label">Cash to Seller</span><span class="row-val">${fmt(f.cfCashToSeller)}</span></div>`:''}
           ${f.cfArrearsLiens>0?`<div class="row"><span class="row-label">Arrears / Liens</span><span class="row-val">${fmt(f.cfArrearsLiens)}</span></div>`:''}
           <div class="row"><span class="row-label">Cost of Acquisition</span><span class="row-val">${fmt(f.cfCostOfAcq)}</span></div>
-          <div class="row"><span class="row-label">Closing Costs · 1.5%</span><span class="row-val">${fmt(cr.closing)}</span></div>
+          <div class="row"><span class="row-label">Closing Costs${f.cfClosingCosts > 0 ? '' : ' · 1.5%'}</span><span class="row-val">${fmt(cr.closing)}</span></div>
           ${f.cfRenovation>0?`<div class="row"><span class="row-label">Renovation</span><span class="row-val">${fmt(f.cfRenovation)}</span></div>`:''}
           <div class="row"><span class="row-label">Marketing</span><span class="row-val">${fmt(f.cfMarketing)}</span></div>
           <div class="row"><span class="row-label">Maintenance Reserve · 2× carry</span><span class="row-val">${fmt(cr.maintenance)}</span></div>
@@ -4199,7 +4223,7 @@
         <p>On this acquisition you're carrying <strong>${fmt(cr.totalDebtService)}/mo</strong> in debt service${cr.plOn ? ` (incl. a ${fmt(cr.plPayment)}/mo private lender note funding the entry fee)` : ''} against <strong>${fmt(cr.totalDebt)}</strong> of acquisition debt, with <strong>${fmt(cr.entryFee)}</strong> of cash in. ${allNeg ? "Every exit is currently cash-flow negative — the spread isn't there yet. Push the acquisition terms (lower the seller payment, stretch the amortization, or drop the note rate) or raise the exit price/rent before you commit." : `Best monthly spread is <strong>${best.name.replace('a ','')}</strong> at <strong>${fmt(best.net)}/mo</strong> · <strong>${fmtPct(best.coc)}</strong> cash-on-cash.`}</p>
         <p>The lever that moves creative deals is the <strong>spread between your acquisition note and the exit</strong>. On a wrap, that's the rate you charge the buyer over your note rate. On a lease option, it's the monthly lease over your carry. On a rental, it's rent minus full operating expenses including the note. Match the exit to the buyer pool that actually exists in the market — not just the best number on paper.</p>
       `;
-      disclaimerText = 'Creative finance math: the acquisition note payment amortizes (or is interest-only if a balloon is set; 0% notes pay straight principal). Closing costs are estimated at 1.5% of the purchase price (acquisition note + cash to seller). Entry fee = cash to seller + arrears + cost of acquisition + closing + renovation + marketing + a maintenance reserve of 2× monthly carry. The entry fee can be funded by a private lender note (default 5-year interest-only at 10%); its interest is added to carry, and the entry fee is sized to include it. Acceleration insurance is tracked separately and excluded from the cash basis. Wrap and Lease Option cash-on-cash are measured after the buyer down payment / option fee offsets your cash in. SubTo carries due-on-sale risk — budget acceleration insurance and keep a refinance or payoff plan ready. Confirm the exit (wrap buyer, tenant-buyer, or rental demand) exists in your market before structuring.';
+      disclaimerText = 'Creative finance math: the acquisition note payment amortizes (or is interest-only if a balloon is set; 0% notes pay straight principal). Closing costs default to 1.5% of the purchase price (acquisition note + cash to seller) and are editable. Entry fee = cash to seller + arrears + cost of acquisition + closing + renovation + marketing + an editable maintenance reserve that defaults to 2× monthly carry. The entry fee can be funded by a private lender note (default 5-year interest-only at 10%); its interest is added to carry, and the entry fee is sized to include it. Acceleration insurance is tracked separately and excluded from the cash basis. Wrap and Lease Option cash-on-cash are measured after the buyer down payment / option fee offsets your cash in. SubTo carries due-on-sale risk — budget acceleration insurance and keep a refinance or payoff plan ready. Confirm the exit (wrap buyer, tenant-buyer, or rental demand) exists in your market before structuring.';
     } else {
       const atlasNote = f.includeAtlasFee ? ` The $${f.atlasFeeAmount.toLocaleString()} Atlas Acquisition Fee is baked into cash-in — that's why cash-on-cash came in where it did.` : ' Atlas Acquisition Fee is toggled off — re-enable to see true cost basis.';
       ctaBody = `
