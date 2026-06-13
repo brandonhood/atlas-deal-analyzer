@@ -221,14 +221,14 @@
   }
   .mode-btn-group {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 8px;
     background: var(--surface-alt);
     padding: 4px;
     border-radius: 8px;
   }
   .mode-btn {
-    padding: 14px 16px;
+    padding: 13px 13px;
     background: transparent;
     border: none;
     border-radius: 6px;
@@ -1454,6 +1454,30 @@
     .offer-callout .mao-val { color: var(--atlas-red) !important; }
     .offer-callout .mao-sub, .offer-callout .offer-range-label { color: var(--ink-3) !important; }
   }
+
+  /* ===================== CREATIVE FINANCE ===================== */
+  .cf-seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; background: var(--surface-alt); padding: 5px; border-radius: 10px; margin-bottom: 22px; }
+  .cf-seg-btn { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; text-align: left; padding: 12px 14px; border: 1px solid transparent; border-radius: 7px; background: transparent; cursor: pointer; transition: all .15s; font-family: var(--display); color: var(--ink-3); }
+  .cf-seg-btn:hover { background: var(--surface); color: var(--ink-2); }
+  .cf-seg-btn.active { background: var(--surface); border-color: var(--atlas-gold); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .cf-seg-label { font-size: 14px; font-weight: 700; letter-spacing: .01em; }
+  .cf-seg-btn.active .cf-seg-label { color: var(--atlas-gold-dark); }
+  .cf-seg-sub { font-family: var(--body); font-size: 11px; font-weight: 400; color: var(--ink-4); }
+  .cf-cmp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 4px 0 8px; }
+  .cf-cmp-col { border: 1px solid var(--rule); border-radius: 12px; padding: 18px; background: var(--surface); position: relative; }
+  .cf-cmp-col.active { border-color: var(--atlas-gold); box-shadow: 0 0 0 1px var(--atlas-gold); }
+  .cf-cmp-name { font-family: var(--display); font-size: 13px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--ink); }
+  .cf-cmp-tag { font-family: var(--body); font-size: 11px; color: var(--ink-4); margin-bottom: 14px; }
+  .cf-cmp-net-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-4); margin-bottom: 4px; }
+  .cf-cmp-net { font-family: var(--display); font-size: 25px; font-weight: 800; letter-spacing: -.01em; }
+  .cf-cmp-roi { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); }
+  .row-val.good { color: var(--good); }
+  .row-val.bad { color: var(--atlas-red); }
+  @media (max-width: 720px) {
+    .cf-seg { grid-auto-flow: row; }
+    .cf-seg-btn { align-items: center; text-align: center; }
+    .cf-cmp { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -1567,6 +1591,10 @@
         <button class="mode-btn" data-mode="rental" onclick="setMode('rental')">
           <span class="mode-btn-label">Rental Hold</span>
           <span class="mode-btn-sub">Stabilized · no rehab</span>
+        </button>
+        <button class="mode-btn" data-mode="creative" onclick="setMode('creative')">
+          <span class="mode-btn-label">Creative Finance</span>
+          <span class="mode-btn-sub">Seller Fin · SubTo · Hybrid</span>
         </button>
       </div>
     </div>
@@ -1723,6 +1751,28 @@
       // Atlas Acquisition Fee — applies to Rental Hold AND BRRRR (ON by default)
       includeAtlasFee: true,
       atlasFeeAmount: 15000,
+
+      // ===================== CREATIVE FINANCE =====================
+      cfAcqType: 'seller_finance',   // 'seller_finance' | 'subto' | 'hybrid'
+      // Seller-finance note (seller_finance, or 2nd position in hybrid)
+      cfSfAmount: 0, cfSfRate: 0, cfSfMonths: 360, cfSfBalloon: 0,
+      // SubTo note (subto + hybrid)
+      cfSubAmount: 0, cfSubMonthsRem: 0, cfSubRate: 0, cfSubPI: 0,
+      // Entry fee (cash to acquire)
+      cfCashToSeller: 0, cfArrearsLiens: 0, cfCostOfAcq: 15000,
+      cfClosingCosts: 0, cfRenovation: 0, cfMarketing: 500, cfAccelInsurance: 0,
+      // Monthly carry
+      cfTaxesMonthly: 0, cfInsuranceMonthly: 0, cfHoaMonthly: 0, cfNoteServicing: 25,
+      // Exit: Wrap
+      cfWrapPrice: 0, cfWrapDownPct: 10, cfWrapRate: 9, cfWrapMonths: 360,
+      // Exit: Lease Option
+      cfLoPrice: 0, cfLoOptionFee: 7500, cfLoTermYears: 5, cfLoLeaseAmount: 0,
+      // Exit: Rental
+      cfRentIncome: 0, cfRentOtherIncome: 0,
+      cfRentMgmtPct: 8, cfRentMaintPct: 8, cfRentCapexPct: 8, cfRentVacancyPct: 6,
+      cfRentAccountingLegal: 50, cfRentUtilities: 0, cfRentMiscMonthly: 0,
+      // Which exit is shown in detail
+      cfActiveExit: 'wrap',          // 'wrap' | 'lease_option' | 'rental'
     }
   };
 
@@ -1746,6 +1796,12 @@
       { num: 2, label: "Financing", kicker: "02", icon: 'calc' },
       { num: 3, label: "Income",    kicker: "03", icon: 'trend' },
       { num: 4, label: "Expenses",  kicker: "04", icon: 'home' },
+    ],
+    creative: [
+      { num: 1, label: "Acquisition", kicker: "01", icon: 'calc' },
+      { num: 2, label: "Entry Fee",   kicker: "02", icon: 'dollar' },
+      { num: 3, label: "Carry",       kicker: "03", icon: 'home' },
+      { num: 4, label: "Exits",       kicker: "04", icon: 'trend' },
     ],
   };
 
@@ -1800,6 +1856,8 @@
     if (key === 'allCash') renderStep();
     if (key === 'includeAtlasFee') renderStep();
     if (key === 'brrrrAcqType') renderStep();
+    if (state.mode === 'creative') renderCreativeSummary();
+    if (key === 'cfAcqType' || key === 'cfActiveExit') renderStep();
   }
 
   function getRehab(mode) {
@@ -1842,6 +1900,9 @@
     if (mode === 'rental' || mode === 'brrrr') {
       state.form.purchasePrice = state.form.asIsValue;
     }
+    if (mode === 'creative' && (!state.form.cfSubAmount || state.form.cfSubAmount === 0) && state.form.mortgageBalance) {
+      state.form.cfSubAmount = state.form.mortgageBalance;  // SubTo balance defaults from GHL mortgage_balance
+    }
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
@@ -1860,6 +1921,10 @@
       eyebrow.textContent = 'DEAL ANALYZER · BRRRR';
       title.innerHTML = 'Buy. Rehab. Rent. Refi. <span class="muted">Repeat.</span>';
       sub.textContent = 'Two-phase financing: acquire with cash or short-term debt, force appreciation through rehab, then refi into long-term DSCR to recycle your capital.';
+    } else if (mode === 'creative') {
+      eyebrow.textContent = 'DEAL ANALYZER · CREATIVE FINANCE';
+      title.innerHTML = 'Structure the terms deal. <span class="muted">SubTo · Seller Finance · Hybrid.</span>';
+      sub.textContent = 'Acquire on terms, then model the exit three ways — wrap the note to a buyer, sell on a lease option, or hold it as a rental. The spread between your acquisition note and the exit is the whole game.';
     } else {
       eyebrow.textContent = 'DEAL ANALYZER · RENTAL HOLD';
       title.innerHTML = 'Underwrite the hold. <span class="muted">Stabilized · no rehab.</span>';
@@ -1871,7 +1936,9 @@
   // ============ REHAB CALC (mirrors your Excel sheet, per-mode) ============
   function lineSubtotal(key, mode) {
     const f = state.form;
-    const line = getRehab(mode)[key];
+    const rb = getRehab(mode);
+    if (!rb || !rb[key]) return 0;       // creative mode has no rehab bucket
+    const line = rb[key];
     if (!line.on) return 0;
     if (line.unit === 'sqft') return line.rate * f.sqft;
     if (line.unit === 'unit') return line.rate;
@@ -1881,8 +1948,98 @@
 
   function calcRehab(mode) {
     const rb = getRehab(mode);
+    if (!rb) return 0;                    // creative mode has no rehab line-items
     return Object.keys(rb).reduce((sum, k) => sum + lineSubtotal(k, mode), 0);
   }
+
+  // ============ CREATIVE FINANCE MATH (mirrors the Creative Deal Analyzer sheet) ============
+  // <CF-MATH-START>
+  function cfAmortizedPayment(principal, annualRatePct, months) {
+    if (!principal || principal <= 0 || !months || months <= 0) return 0;
+    const r = (annualRatePct || 0) / 100 / 12;
+    if (r === 0) return principal / months;            // 0% note = straight principal paydown
+    return principal * (r * Math.pow(1 + r, months)) / (Math.pow(1 + r, months) - 1);
+  }
+  function cfInterestOnly(principal, annualRatePct) {
+    if (!principal || principal <= 0) return 0;
+    return principal * ((annualRatePct || 0) / 100 / 12);
+  }
+  function cfSellerFinancePayment(f) {
+    // Balloon set -> interest-only until the balloon; otherwise fully amortizing
+    if (f.cfSfBalloon && f.cfSfBalloon > 0) return cfInterestOnly(f.cfSfAmount, f.cfSfRate);
+    return cfAmortizedPayment(f.cfSfAmount, f.cfSfRate, f.cfSfMonths);
+  }
+  function cfNotePayment(f) {
+    if (f.cfAcqType === 'seller_finance') return cfSellerFinancePayment(f);
+    if (f.cfAcqType === 'subto')          return (f.cfSubPI || 0);
+    if (f.cfAcqType === 'hybrid')         return (f.cfSubPI || 0) + cfSellerFinancePayment(f);
+    return 0;
+  }
+  function cfTotalDebt(f) {
+    if (f.cfAcqType === 'seller_finance') return (f.cfSfAmount || 0);
+    if (f.cfAcqType === 'subto')          return (f.cfSubAmount || 0);
+    if (f.cfAcqType === 'hybrid')         return (f.cfSubAmount || 0) + (f.cfSfAmount || 0);
+    return 0;
+  }
+  function cfMonthlyCarry(f) {
+    return cfNotePayment(f) + (f.cfTaxesMonthly||0) + (f.cfInsuranceMonthly||0) + (f.cfHoaMonthly||0) + (f.cfNoteServicing||0);
+  }
+  function cfMaintenance(f) { return cfMonthlyCarry(f) * 2; }   // 2 months of carry, held in reserve
+  function cfEntryFee(f) {
+    return (f.cfCashToSeller||0) + (f.cfArrearsLiens||0) + (f.cfCostOfAcq||0) + (f.cfClosingCosts||0)
+         + (f.cfRenovation||0) + (f.cfMarketing||0) + cfMaintenance(f);
+  }
+  function computeCreative(f) {
+    const notePayment  = cfNotePayment(f);
+    const totalDebt    = cfTotalDebt(f);
+    const monthlyCarry = cfMonthlyCarry(f);
+    const maintenance  = cfMaintenance(f);
+    const entryFee     = cfEntryFee(f);
+
+    // ----- WRAP exit -----
+    const wrapDown     = (f.cfWrapPrice||0) * ((f.cfWrapDownPct||0)/100);
+    const wrapFinanced = (f.cfWrapPrice||0) - wrapDown;
+    const wrapBuyerPmt = cfAmortizedPayment(wrapFinanced, f.cfWrapRate, f.cfWrapMonths);
+    const wrapNet      = wrapBuyerPmt - notePayment;
+    const wrapAnnual   = wrapNet * 12;
+    const wrapBasisDP  = entryFee - wrapDown;
+    const wrap = {
+      price: (f.cfWrapPrice||0), down: wrapDown, financed: wrapFinanced, buyerPmt: wrapBuyerPmt,
+      monthlyNet: wrapNet, annualNet: wrapAnnual,
+      rorWithDP:    wrapBasisDP !== 0 ? (wrapAnnual / wrapBasisDP) * 100 : 0,
+      rorWithoutDP: entryFee   !== 0 ? (wrapAnnual / entryFee)   * 100 : 0,
+    };
+
+    // ----- LEASE OPTION exit -----
+    const loNet     = (f.cfLoLeaseAmount||0) - notePayment;
+    const loAnnual  = loNet * 12;
+    const loBasisOF = entryFee - (f.cfLoOptionFee||0);
+    const lease = {
+      price: (f.cfLoPrice||0), optionFee: (f.cfLoOptionFee||0), lease: (f.cfLoLeaseAmount||0),
+      monthlyNet: loNet, annualNet: loAnnual,
+      rorWithOF:    loBasisOF !== 0 ? (loAnnual / loBasisOF) * 100 : 0,
+      rorWithoutOF: entryFee  !== 0 ? (loAnnual / entryFee)  * 100 : 0,
+    };
+
+    // ----- RENTAL exit -----
+    const rentGross   = (f.cfRentIncome||0) + (f.cfRentOtherIncome||0);
+    const rentMgmt    = rentGross * ((f.cfRentMgmtPct||0)/100);
+    const rentMaint   = rentGross * ((f.cfRentMaintPct||0)/100);
+    const rentCapex   = rentGross * ((f.cfRentCapexPct||0)/100);
+    const rentVacancy = rentGross * ((f.cfRentVacancyPct||0)/100);
+    const rentExpenses = (f.cfTaxesMonthly||0) + (f.cfInsuranceMonthly||0) + (f.cfHoaMonthly||0)
+      + rentMgmt + rentMaint + rentCapex + rentVacancy + notePayment
+      + (f.cfRentAccountingLegal||0) + (f.cfRentUtilities||0) + (f.cfRentMiscMonthly||0);
+    const rentNet = rentGross - rentExpenses;
+    const rental = {
+      gross: rentGross, mgmt: rentMgmt, maint: rentMaint, capex: rentCapex, vacancy: rentVacancy,
+      expenses: rentExpenses, monthlyNet: rentNet, annualNet: rentNet * 12,
+      ror: entryFee !== 0 ? ((rentNet * 12) / entryFee) * 100 : 0,
+    };
+
+    return { notePayment, totalDebt, monthlyCarry, maintenance, entryFee, wrap, lease, rental };
+  }
+  // <CF-MATH-END>
 
   // ============ MAIN CALCULATIONS ============
   function calculate() {
@@ -2069,6 +2226,7 @@
       projection, grade, gradeColor,
       vacancyLoss, mgmt, repairsMonthly, capexMonthly, taxMonthly, insMonthly,
       brrrr,  // BRRRR-specific details (null if not in BRRRR mode)
+      creative: state.mode === 'creative' ? computeCreative(f) : null,
     };
   }
 
@@ -2425,6 +2583,9 @@
       else if (state.step === 6) {
         tpl = expensesStepHTML(true);
       }
+    }
+    else if (mode === 'creative') {
+      tpl = creativeStepHTML();
     }
 
     el.innerHTML = tpl;
@@ -2786,6 +2947,538 @@
     `;
   }
 
+  // ============ CREATIVE FINANCE — RENDER ============
+  function cfStepEyebrow(label) {
+    const total = STEP_CONFIGS.creative.length;
+    const pad = n => n.toString().padStart(2, '0');
+    return `<div class="section-eyebrow">Step ${pad(state.step)} of ${pad(total)}${label ? ' · ' + label : ''}</div>`;
+  }
+  function cfSegmentedHTML(stateKey, options, current) {
+    return `<div class="cf-seg">` + options.map(o =>
+      `<button class="cf-seg-btn ${current === o.val ? 'active' : ''}" onclick="update('${stateKey}', '${o.val}')">
+         <span class="cf-seg-label">${o.label}</span>
+         ${o.sub ? `<span class="cf-seg-sub">${o.sub}</span>` : ''}
+       </button>`).join('') + `</div>`;
+  }
+
+  function creativeStepHTML() {
+    if (state.step === 1) return creativeAcquisitionStepHTML();
+    if (state.step === 2) return creativeEntryFeeStepHTML();
+    if (state.step === 3) return creativeCarryStepHTML();
+    if (state.step === 4) return creativeExitsStepHTML();
+    return '';
+  }
+
+  function creativeAcquisitionStepHTML() {
+    const f = state.form;
+    const acq = f.cfAcqType;
+    const sellerBlock = `
+      <div class="subsection-title" style="margin-top:18px;">Seller Finance Note${acq === 'hybrid' ? ' · 2nd position (seller equity)' : ''}</div>
+      <div class="field-grid-2">
+        <div>
+          <label class="field-label">Note Amount</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfSfAmount}" oninput="update('cfSfAmount', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Principal owed to the seller</div>
+        </div>
+        <div>
+          <label class="field-label">Interest Rate</label>
+          <div class="input-pct"><input type="number" step="0.01" class="num-input" value="${f.cfSfRate}" oninput="update('cfSfRate', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">0% = straight principal paydown</div>
+        </div>
+        <div>
+          <label class="field-label">Term (Months)</label>
+          <input type="number" class="num-input" value="${f.cfSfMonths}" oninput="update('cfSfMonths', parseInt(this.value)||0)">
+          <div class="field-hint">360 = 30 years</div>
+        </div>
+        <div>
+          <label class="field-label">Balloon (Months)</label>
+          <input type="number" class="num-input" value="${f.cfSfBalloon}" oninput="update('cfSfBalloon', parseInt(this.value)||0)">
+          <div class="field-hint">0 = none · set → interest-only to balloon</div>
+        </div>
+      </div>`;
+    const subBlock = `
+      <div class="subsection-title" style="margin-top:18px;">SubTo Note · existing mortgage taken over</div>
+      <div class="field-grid-2">
+        <div>
+          <label class="field-label">Current Note Balance</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfSubAmount}" oninput="update('cfSubAmount', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Defaults from the property bar's mortgage balance</div>
+        </div>
+        <div>
+          <label class="field-label">Monthly P&I Payment</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfSubPI}" oninput="update('cfSubPI', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">The existing payment you take over (P&I only)</div>
+        </div>
+        <div>
+          <label class="field-label">Interest Rate</label>
+          <div class="input-pct"><input type="number" step="0.01" class="num-input" value="${f.cfSubRate}" oninput="update('cfSubRate', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">The seller's existing rate</div>
+        </div>
+        <div>
+          <label class="field-label">Months Remaining</label>
+          <input type="number" class="num-input" value="${f.cfSubMonthsRem}" oninput="update('cfSubMonthsRem', parseInt(this.value)||0)">
+          <div class="field-hint">Term left on the existing loan</div>
+        </div>
+      </div>`;
+    let blocks = '';
+    if (acq === 'seller_finance') blocks = sellerBlock;
+    else if (acq === 'subto') blocks = subBlock;
+    else if (acq === 'hybrid') blocks = subBlock + sellerBlock;
+
+    return `
+      ${cfStepEyebrow('Acquisition')}
+      <h2 class="section-title">Acquisition Structure</h2>
+      <p class="section-sub">How you take title on terms. Seller Finance = you owe the seller directly. SubTo = you take over their existing mortgage. Hybrid = both (take over the loan, carry the seller's equity as a second note).</p>
+      ${cfSegmentedHTML('cfAcqType', [
+        { val: 'seller_finance', label: 'Seller Finance', sub: 'One note to seller' },
+        { val: 'subto', label: 'SubTo', sub: 'Take over mortgage' },
+        { val: 'hybrid', label: 'Hybrid', sub: 'SubTo + seller 2nd' },
+      ], acq)}
+      ${blocks}
+      <div id="cf-step-summary">${creativeSummaryHTML()}</div>
+    `;
+  }
+
+  function creativeEntryFeeStepHTML() {
+    const f = state.form;
+    const cr = calculate().creative;
+    return `
+      ${cfStepEyebrow('Entry Fee')}
+      <h2 class="section-title">Entry Fee — Cash to Acquire</h2>
+      <p class="section-sub">Everything you bring to close. Maintenance auto-calculates as two months of full carry, held in reserve. Acceleration insurance is tracked separately — below the line — and does not hit the cash basis.</p>
+      <div class="field-grid-2">
+        <div>
+          <label class="field-label">Cash to Seller</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfCashToSeller}" oninput="update('cfCashToSeller', parseFloat(this.value)||0)"></div>
+        </div>
+        <div>
+          <label class="field-label">Arrears / Liens</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfArrearsLiens}" oninput="update('cfArrearsLiens', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Back payments, code liens, etc.</div>
+        </div>
+        <div>
+          <label class="field-label">Cost of Acquisition</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfCostOfAcq}" oninput="update('cfCostOfAcq', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Atlas fee / assignment · default $15,000</div>
+        </div>
+        <div>
+          <label class="field-label">Closing Costs</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfClosingCosts}" oninput="update('cfClosingCosts', parseFloat(this.value)||0)"></div>
+        </div>
+        <div>
+          <label class="field-label">Renovation</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfRenovation}" oninput="update('cfRenovation', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Make-ready / turn cost</div>
+        </div>
+        <div>
+          <label class="field-label">Marketing</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfMarketing}" oninput="update('cfMarketing', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Cost to find buyer/tenant · default $500</div>
+        </div>
+        <div>
+          <label class="field-label">Maintenance Reserve <span style="color:var(--ink-4);font-weight:400;">· auto</span></label>
+          <div class="input-money"><input type="number" class="num-input" value="${Math.round(cr.maintenance)}" disabled style="background:var(--surface-alt);color:var(--ink-3);"></div>
+          <div class="field-hint">2 × monthly carry (${fmt(cr.monthlyCarry)}/mo)</div>
+        </div>
+        <div>
+          <label class="field-label">Acceleration Insurance <span style="color:var(--ink-4);font-weight:400;">· separate</span></label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfAccelInsurance}" oninput="update('cfAccelInsurance', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Due-on-sale protection · NOT in cash basis</div>
+        </div>
+      </div>
+      <div id="cf-step-summary">${creativeSummaryHTML()}</div>
+    `;
+  }
+
+  function creativeCarryStepHTML() {
+    const f = state.form;
+    return `
+      ${cfStepEyebrow('Carry')}
+      <h2 class="section-title">Monthly Carry</h2>
+      <p class="section-sub">What it costs to hold each month before the exit covers it. Taxes, insurance, and HOA here also flow into the rental exit's operating expenses.</p>
+      <div class="field-grid-2">
+        <div>
+          <label class="field-label">Property Taxes</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfTaxesMonthly}" oninput="update('cfTaxesMonthly', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Monthly</div>
+        </div>
+        <div>
+          <label class="field-label">Insurance</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfInsuranceMonthly}" oninput="update('cfInsuranceMonthly', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Monthly · landlord / hazard policy</div>
+        </div>
+        <div>
+          <label class="field-label">HOA / Other Fees</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfHoaMonthly}" oninput="update('cfHoaMonthly', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Monthly</div>
+        </div>
+        <div>
+          <label class="field-label">Note Servicing Fee</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfNoteServicing}" oninput="update('cfNoteServicing', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Default $25 · servicing company</div>
+        </div>
+      </div>
+      <div id="cf-step-summary">${creativeSummaryHTML()}</div>
+    `;
+  }
+
+  function creativeExitsStepHTML() {
+    const f = state.form;
+    const exit = f.cfActiveExit;
+    const wrapInputs = `
+      <div class="field-grid-2">
+        <div>
+          <label class="field-label">Sale Price to Buyer (OFV)</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfWrapPrice}" oninput="update('cfWrapPrice', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">What you sell to the wrap buyer for</div>
+        </div>
+        <div>
+          <label class="field-label">Buyer Down Payment</label>
+          <div class="input-pct"><input type="number" step="0.5" class="num-input" value="${f.cfWrapDownPct}" oninput="update('cfWrapDownPct', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Default 10% · offsets your cash in</div>
+        </div>
+        <div>
+          <label class="field-label">Rate You Charge Buyer</label>
+          <div class="input-pct"><input type="number" step="0.01" class="num-input" value="${f.cfWrapRate}" oninput="update('cfWrapRate', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Default 9% · the spread over your note rate</div>
+        </div>
+        <div>
+          <label class="field-label">Amortization (Months)</label>
+          <input type="number" class="num-input" value="${f.cfWrapMonths}" oninput="update('cfWrapMonths', parseInt(this.value)||0)">
+          <div class="field-hint">360 = 30 years</div>
+        </div>
+      </div>`;
+    const leaseInputs = `
+      <div class="field-grid-2">
+        <div>
+          <label class="field-label">Option / Purchase Price</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoPrice}" oninput="update('cfLoPrice', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Future strike price for the tenant-buyer</div>
+        </div>
+        <div>
+          <label class="field-label">Option Fee</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoOptionFee}" oninput="update('cfLoOptionFee', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Default $7,500 · upfront, offsets cash in</div>
+        </div>
+        <div>
+          <label class="field-label">Monthly Lease</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoLeaseAmount}" oninput="update('cfLoLeaseAmount', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Rent the tenant-buyer pays</div>
+        </div>
+        <div>
+          <label class="field-label">Option Term (Years)</label>
+          <input type="number" class="num-input" value="${f.cfLoTermYears}" oninput="update('cfLoTermYears', parseInt(this.value)||0)">
+          <div class="field-hint">Default 5</div>
+        </div>
+      </div>`;
+    const rentalInputs = `
+      <div class="field-grid-2">
+        <div>
+          <label class="field-label">Monthly Rent</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentIncome}" oninput="update('cfRentIncome', parseFloat(this.value)||0)"></div>
+        </div>
+        <div>
+          <label class="field-label">Other Income</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentOtherIncome}" oninput="update('cfRentOtherIncome', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Parking, laundry, storage, misc.</div>
+        </div>
+        <div>
+          <label class="field-label">Management</label>
+          <div class="input-pct"><input type="number" step="0.5" class="num-input" value="${f.cfRentMgmtPct}" oninput="update('cfRentMgmtPct', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">% of rent · default 8%</div>
+        </div>
+        <div>
+          <label class="field-label">Maintenance &amp; Repairs</label>
+          <div class="input-pct"><input type="number" step="0.5" class="num-input" value="${f.cfRentMaintPct}" oninput="update('cfRentMaintPct', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">% of rent · default 8%</div>
+        </div>
+        <div>
+          <label class="field-label">CapEx Reserve</label>
+          <div class="input-pct"><input type="number" step="0.5" class="num-input" value="${f.cfRentCapexPct}" oninput="update('cfRentCapexPct', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">% of rent · default 8%</div>
+        </div>
+        <div>
+          <label class="field-label">Vacancy</label>
+          <div class="input-pct"><input type="number" step="0.5" class="num-input" value="${f.cfRentVacancyPct}" oninput="update('cfRentVacancyPct', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">% of rent · default 6%</div>
+        </div>
+        <div>
+          <label class="field-label">Accounting &amp; Legal</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentAccountingLegal}" oninput="update('cfRentAccountingLegal', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Monthly · default $50</div>
+        </div>
+        <div>
+          <label class="field-label">Utilities</label>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentUtilities}" oninput="update('cfRentUtilities', parseFloat(this.value)||0)"></div>
+          <div class="field-hint">Gas/electric/water/trash you cover</div>
+        </div>
+      </div>
+      <p class="section-sub" style="margin-top:12px; font-size:12px;">Taxes, insurance, and HOA pull from your Carry step (${fmt(f.cfTaxesMonthly + f.cfInsuranceMonthly + f.cfHoaMonthly)}/mo combined). Your acquisition note payment is included as the mortgage line.</p>`;
+
+    let inputs = '', subtitle = '';
+    if (exit === 'wrap') { inputs = wrapInputs; subtitle = "Sell to a buyer on owner-financing at a higher rate than your acquisition note. You keep the monthly spread, plus the buyer's down payment offsets your cash in."; }
+    else if (exit === 'lease_option') { inputs = leaseInputs; subtitle = 'Lease to a tenant-buyer who holds an option to purchase. You collect an upfront option fee plus the monthly spread over your note.'; }
+    else if (exit === 'rental') { inputs = rentalInputs; subtitle = 'Hold and rent. Full operating expenses including your acquisition note payment. Cash-on-cash is measured against your entry fee.'; }
+
+    return `
+      ${cfStepEyebrow('Exits')}
+      <h2 class="section-title">Exit Strategy</h2>
+      <p class="section-sub">Three ways out of the same acquisition. The comparison panel on the right ranks all three live — pick one below to model its detail.</p>
+      ${cfSegmentedHTML('cfActiveExit', [
+        { val: 'wrap', label: 'Wrap', sub: 'Owner-finance resale' },
+        { val: 'lease_option', label: 'Lease Option', sub: 'Rent-to-own' },
+        { val: 'rental', label: 'Rental', sub: 'Buy & hold' },
+      ], exit)}
+      <p class="section-sub" style="margin-top:-6px;">${subtitle}</p>
+      ${inputs}
+      <div id="cf-step-summary">${creativeSummaryHTML()}</div>
+    `;
+  }
+
+  // Live, focus-preserving summary injected per step into #cf-step-summary
+  function creativeSummaryHTML() {
+    const c = calculate(); const cr = c.creative; const f = state.form;
+    if (!cr) return '';
+    if (state.step === 1) {
+      return `<div class="stats-band" style="margin-top:22px;">
+        <div><div class="stat-label">Total Note Payment</div><div class="stat-val">${fmt(cr.notePayment)}</div></div>
+        <div><div class="stat-label">Total Debt</div><div class="stat-val">${fmt(cr.totalDebt)}</div></div>
+        <div><div class="stat-label">Note + Servicing</div><div class="stat-val">${fmt(cr.notePayment + f.cfNoteServicing)}</div></div>
+      </div>`;
+    }
+    if (state.step === 2) {
+      return `<div class="equity-callout good" style="margin-top:6px;">
+        <div class="eyebrow">Total Entry Fee · Cash In</div>
+        <div class="val">${fmt(cr.entryFee)}</div>
+        <div class="sub">${f.cfAccelInsurance > 0 ? `+ ${fmt(f.cfAccelInsurance)} acceleration insurance tracked separately = ${fmt(cr.entryFee + f.cfAccelInsurance)} all-in cash` : "Basis for every exit's cash-on-cash return."}</div>
+      </div>`;
+    }
+    if (state.step === 3) {
+      return `<div class="stats-band" style="margin-top:22px;">
+        <div><div class="stat-label">Monthly Carry</div><div class="stat-val">${fmt(cr.monthlyCarry)}</div></div>
+        <div><div class="stat-label">Maintenance Reserve</div><div class="stat-val">${fmt(cr.maintenance)}</div></div>
+        <div><div class="stat-label">Note Payment</div><div class="stat-val">${fmt(cr.notePayment)}</div></div>
+      </div>
+      <p class="section-sub" style="margin-top:10px;font-size:12px;">Maintenance reserve = 2 × monthly carry, added to your entry fee. Adjust the note in Step 1 to move the carry.</p>`;
+    }
+    if (state.step === 4) return creativeExitDetailHTML(cr, f);
+    return '';
+  }
+
+  function creativeExitDetailHTML(cr, f) {
+    const exit = f.cfActiveExit;
+    const gb = v => v >= 0 ? 'good' : 'bad';
+    if (exit === 'wrap') {
+      const w = cr.wrap;
+      return `
+        <div class="card" style="margin-top:22px;">
+          <div class="section-eyebrow">Wrap Detail</div>
+          <div class="row"><span class="row-label">Sale Price (OFV)</span><span class="row-val">${fmt(w.price)}</span></div>
+          <div class="row"><span class="row-label">Buyer Down · ${f.cfWrapDownPct}%</span><span class="row-val">${fmt(w.down)}</span></div>
+          <div class="row"><span class="row-label">Amount Financed</span><span class="row-val">${fmt(w.financed)}</span></div>
+          <div class="row"><span class="row-label">Buyer Payment @ ${f.cfWrapRate}%</span><span class="row-val">${fmt(w.buyerPmt)}/mo</span></div>
+          <div class="row"><span class="row-label">− Your Note Payment</span><span class="row-val">${fmt(cr.notePayment)}/mo</span></div>
+          <div class="row-divider"><div class="row row-bold"><span class="row-label">Monthly Net Spread</span><span class="row-val ${gb(w.monthlyNet)}">${fmt(w.monthlyNet)}/mo</span></div></div>
+          <div class="stats-band" style="margin-top:14px;">
+            <div><div class="stat-label">Annual Net</div><div class="stat-val ${gb(w.annualNet)}">${fmt(w.annualNet)}</div></div>
+            <div><div class="stat-label">CoC · after down</div><div class="stat-val ${gb(w.rorWithDP)}">${fmtPct(w.rorWithDP)}</div></div>
+            <div><div class="stat-label">CoC · no down</div><div class="stat-val ${gb(w.rorWithoutDP)}">${fmtPct(w.rorWithoutDP)}</div></div>
+          </div>
+        </div>`;
+    }
+    if (exit === 'lease_option') {
+      const l = cr.lease;
+      return `
+        <div class="card" style="margin-top:22px;">
+          <div class="section-eyebrow">Lease Option Detail</div>
+          <div class="row"><span class="row-label">Option / Strike Price</span><span class="row-val">${fmt(l.price)}</span></div>
+          <div class="row"><span class="row-label">Option Fee · upfront</span><span class="row-val">${fmt(l.optionFee)}</span></div>
+          <div class="row"><span class="row-label">Monthly Lease</span><span class="row-val">${fmt(l.lease)}/mo</span></div>
+          <div class="row"><span class="row-label">− Your Note Payment</span><span class="row-val">${fmt(cr.notePayment)}/mo</span></div>
+          <div class="row-divider"><div class="row row-bold"><span class="row-label">Monthly Net Spread</span><span class="row-val ${gb(l.monthlyNet)}">${fmt(l.monthlyNet)}/mo</span></div></div>
+          <div class="stats-band" style="margin-top:14px;">
+            <div><div class="stat-label">Annual Net</div><div class="stat-val ${gb(l.annualNet)}">${fmt(l.annualNet)}</div></div>
+            <div><div class="stat-label">CoC · after fee</div><div class="stat-val ${gb(l.rorWithOF)}">${fmtPct(l.rorWithOF)}</div></div>
+            <div><div class="stat-label">CoC · no fee</div><div class="stat-val ${gb(l.rorWithoutOF)}">${fmtPct(l.rorWithoutOF)}</div></div>
+          </div>
+        </div>`;
+    }
+    const r = cr.rental;
+    return `
+      <div class="card" style="margin-top:22px;">
+        <div class="section-eyebrow">Rental Detail</div>
+        <div class="row"><span class="row-label">Gross Income</span><span class="row-val">${fmt(r.gross)}/mo</span></div>
+        <div class="row"><span class="row-label">Taxes + Ins + HOA</span><span class="row-val">${fmt(f.cfTaxesMonthly + f.cfInsuranceMonthly + f.cfHoaMonthly)}/mo</span></div>
+        <div class="row"><span class="row-label">Mgmt ${f.cfRentMgmtPct}% · Maint ${f.cfRentMaintPct}% · CapEx ${f.cfRentCapexPct}% · Vac ${f.cfRentVacancyPct}%</span><span class="row-val">${fmt(r.mgmt + r.maint + r.capex + r.vacancy)}/mo</span></div>
+        <div class="row"><span class="row-label">Note + Acct/Legal + Util</span><span class="row-val">${fmt(cr.notePayment + f.cfRentAccountingLegal + f.cfRentUtilities + f.cfRentMiscMonthly)}/mo</span></div>
+        <div class="row-divider"><div class="row row-bold"><span class="row-label">Net Monthly Cash Flow</span><span class="row-val ${gb(r.monthlyNet)}">${fmt(r.monthlyNet)}/mo</span></div></div>
+        <div class="stats-band" style="margin-top:14px;">
+          <div><div class="stat-label">Annual Cash Flow</div><div class="stat-val ${gb(r.annualNet)}">${fmt(r.annualNet)}</div></div>
+          <div><div class="stat-label">Cash-on-Cash</div><div class="stat-val ${gb(r.ror)}">${fmtPct(r.ror)}</div></div>
+          <div><div class="stat-label">Total Investment</div><div class="stat-val">${fmt(cr.entryFee)}</div></div>
+        </div>
+      </div>`;
+  }
+
+  function renderCreativeSummary() {
+    const el = document.getElementById('cf-step-summary');
+    if (el) el.innerHTML = creativeSummaryHTML();
+  }
+
+  // Sidebar: acquisition stats card
+  function creativeStatsCardHTML(c) {
+    const f = state.form; const cr = c.creative;
+    if (!cr) return rentalStatsCardHTML(c);
+    const exitName = f.cfActiveExit === 'wrap' ? 'Wrap' : f.cfActiveExit === 'lease_option' ? 'Lease Option' : 'Rental';
+    const ex = f.cfActiveExit === 'wrap' ? cr.wrap : f.cfActiveExit === 'lease_option' ? cr.lease : cr.rental;
+    const coc = f.cfActiveExit === 'wrap' ? cr.wrap.rorWithDP : f.cfActiveExit === 'lease_option' ? cr.lease.rorWithOF : cr.rental.ror;
+    const acqLabel = f.cfAcqType === 'seller_finance' ? 'Seller Finance' : f.cfAcqType === 'subto' ? 'SubTo' : 'Hybrid';
+    return `
+      <div class="preview-card">
+        <div class="preview-head">
+          <div class="preview-eyebrow">Creative · Live</div>
+          <div class="grade-badge" style="background: var(--atlas-gold); width:auto; min-width:42px; padding:0 12px; font-size:11px; letter-spacing:.03em;">${acqLabel}</div>
+        </div>
+        <div class="preview-stats">
+          <div class="preview-stat"><span class="preview-stat-label">Note Payment</span><span class="preview-stat-val">${fmt(cr.notePayment)}/mo</span></div>
+          <div class="preview-stat"><span class="preview-stat-label">Total Debt</span><span class="preview-stat-val">${fmt(cr.totalDebt)}</span></div>
+          <div class="preview-stat"><span class="preview-stat-label">Entry Fee · cash in</span><span class="preview-stat-val">${fmt(cr.entryFee)}</span></div>
+          <div class="preview-divider">
+            <div class="preview-stat"><span class="preview-stat-label">${exitName} Net</span><span class="preview-stat-val ${ex.monthlyNet >= 0 ? 'good':'bad'}">${fmt(ex.monthlyNet)}/mo</span></div>
+            <div class="preview-stat"><span class="preview-stat-label">${exitName} Cash-on-Cash</span><span class="preview-stat-val ${coc >= 0 ? 'good':'bad'}">${fmtPct(coc)}</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Sidebar: 3-exit comparison panel (dark, mirrors comparePanelHTML)
+  function creativeComparePanelHTML(c) {
+    const f = state.form; const cr = c.creative;
+    if (!cr) return '';
+    const rows = [
+      { key: 'wrap', name: 'Wrap', net: cr.wrap.monthlyNet, coc: cr.wrap.rorWithDP },
+      { key: 'lease_option', name: 'Lease Option', net: cr.lease.monthlyNet, coc: cr.lease.rorWithOF },
+      { key: 'rental', name: 'Rental', net: cr.rental.monthlyNet, coc: cr.rental.ror },
+    ];
+    const best = rows.slice().sort((a,b) => b.net - a.net)[0];
+    const rowsHTML = rows.map(r => {
+      const active = f.cfActiveExit === r.key;
+      const moStyle = active ? '' : (r.net < 0 ? 'style="color:#E08585"' : '');
+      return `
+        <div class="compare-row ${active ? 'current' : ''}">
+          <div class="compare-strategy">
+            <span class="compare-strategy-name">${r.name}</span>
+            <span class="compare-strategy-sub">${fmtPct(r.coc)} CoC</span>
+          </div>
+          <span class="compare-mao ${active ? 'highlight' : ''}" ${moStyle}>${fmt(r.net)}/mo</span>
+        </div>`;
+    }).join('');
+    return `
+      <div class="compare-panel">
+        <div class="compare-title">Exit Comparison · Net / Month</div>
+        ${rowsHTML}
+        <div class="compare-delta">
+          <span>Best spread</span>
+          <strong>${best.name} · ${fmt(best.net)}/mo</strong>
+        </div>
+      </div>
+    `;
+  }
+
+  // Report sections
+  function creativeReportSectionsHTML(c) {
+    const f = state.form; const cr = c.creative;
+    const acqLabel = f.cfAcqType === 'seller_finance' ? 'Seller Finance' : f.cfAcqType === 'subto' ? 'SubTo' : 'Hybrid · SubTo + Seller 2nd';
+    let acqRows = '';
+    if (f.cfAcqType === 'seller_finance' || f.cfAcqType === 'hybrid') {
+      acqRows += `
+        <div class="subsection-title">Seller Finance Note</div>
+        <div class="row"><span class="row-label">Note Amount</span><span class="row-val">${fmt(f.cfSfAmount)}</span></div>
+        <div class="row"><span class="row-label">Rate · Term</span><span class="row-val">${f.cfSfRate}% · ${f.cfSfMonths} mo${f.cfSfBalloon > 0 ? ` · balloon ${f.cfSfBalloon}mo` : ''}</span></div>
+        <div class="row"><span class="row-label">Payment</span><span class="row-val">${fmt(cfSellerFinancePayment(f))}/mo</span></div>`;
+    }
+    if (f.cfAcqType === 'subto' || f.cfAcqType === 'hybrid') {
+      acqRows += `
+        <div class="subsection-title"${f.cfAcqType === 'hybrid' ? ' style="margin-top:14px;"' : ''}>SubTo Note</div>
+        <div class="row"><span class="row-label">Balance Taken Over</span><span class="row-val">${fmt(f.cfSubAmount)}</span></div>
+        <div class="row"><span class="row-label">Rate · Months Left</span><span class="row-val">${f.cfSubRate}% · ${f.cfSubMonthsRem} mo</span></div>
+        <div class="row"><span class="row-label">P&I Payment</span><span class="row-val">${fmt(f.cfSubPI)}/mo</span></div>`;
+    }
+    const netColor = v => v >= 0 ? 'var(--good)' : 'var(--atlas-red)';
+    return `
+      <div class="split-grid">
+        <div class="card">
+          <div class="section-eyebrow">Acquisition · ${acqLabel}</div>
+          <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--ink);">Deal Structure</h3>
+          ${acqRows}
+          <div class="row-divider">
+            <div class="row row-bold"><span class="row-label">Total Note Payment</span><span class="row-val">${fmt(cr.notePayment)}/mo</span></div>
+            <div class="row row-bold"><span class="row-label">Total Debt</span><span class="row-val">${fmt(cr.totalDebt)}</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-eyebrow">Entry Fee</div>
+          <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--ink);">Cash to Acquire</h3>
+          ${f.cfCashToSeller>0?`<div class="row"><span class="row-label">Cash to Seller</span><span class="row-val">${fmt(f.cfCashToSeller)}</span></div>`:''}
+          ${f.cfArrearsLiens>0?`<div class="row"><span class="row-label">Arrears / Liens</span><span class="row-val">${fmt(f.cfArrearsLiens)}</span></div>`:''}
+          <div class="row"><span class="row-label">Cost of Acquisition</span><span class="row-val">${fmt(f.cfCostOfAcq)}</span></div>
+          ${f.cfClosingCosts>0?`<div class="row"><span class="row-label">Closing Costs</span><span class="row-val">${fmt(f.cfClosingCosts)}</span></div>`:''}
+          ${f.cfRenovation>0?`<div class="row"><span class="row-label">Renovation</span><span class="row-val">${fmt(f.cfRenovation)}</span></div>`:''}
+          <div class="row"><span class="row-label">Marketing</span><span class="row-val">${fmt(f.cfMarketing)}</span></div>
+          <div class="row"><span class="row-label">Maintenance Reserve · 2× carry</span><span class="row-val">${fmt(cr.maintenance)}</span></div>
+          <div class="row-divider">
+            <div class="row row-bold"><span class="row-label">Total Entry Fee</span><span class="row-val">${fmt(cr.entryFee)}</span></div>
+            ${f.cfAccelInsurance>0?`<div class="row" style="color:var(--ink-4);font-style:italic;"><span class="row-label">+ Acceleration Insurance · separate</span><span class="row-val">${fmt(f.cfAccelInsurance)}</span></div>`:''}
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-eyebrow">Exit Comparison</div>
+        <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 18px; color: var(--ink);">Three Ways Out</h3>
+        <div class="cf-cmp">
+          <div class="cf-cmp-col ${f.cfActiveExit==='wrap'?'active':''}">
+            <div class="cf-cmp-name">Wrap</div>
+            <div class="cf-cmp-tag">Owner-finance resale</div>
+            <div class="cf-cmp-net-label">Net / Month</div>
+            <div class="cf-cmp-net" style="color:${netColor(cr.wrap.monthlyNet)}">${fmt(cr.wrap.monthlyNet)}</div>
+            <div class="cf-cmp-roi">
+              <div class="row"><span class="row-label">CoC · after down</span><span class="row-val">${fmtPct(cr.wrap.rorWithDP)}</span></div>
+              <div class="row"><span class="row-label">Annual Net</span><span class="row-val">${fmt(cr.wrap.annualNet)}</span></div>
+              <div class="row"><span class="row-label">Buyer Down</span><span class="row-val">${fmt(cr.wrap.down)}</span></div>
+            </div>
+          </div>
+          <div class="cf-cmp-col ${f.cfActiveExit==='lease_option'?'active':''}">
+            <div class="cf-cmp-name">Lease Option</div>
+            <div class="cf-cmp-tag">Rent-to-own</div>
+            <div class="cf-cmp-net-label">Net / Month</div>
+            <div class="cf-cmp-net" style="color:${netColor(cr.lease.monthlyNet)}">${fmt(cr.lease.monthlyNet)}</div>
+            <div class="cf-cmp-roi">
+              <div class="row"><span class="row-label">CoC · after fee</span><span class="row-val">${fmtPct(cr.lease.rorWithOF)}</span></div>
+              <div class="row"><span class="row-label">Annual Net</span><span class="row-val">${fmt(cr.lease.annualNet)}</span></div>
+              <div class="row"><span class="row-label">Option Fee</span><span class="row-val">${fmt(cr.lease.optionFee)}</span></div>
+            </div>
+          </div>
+          <div class="cf-cmp-col ${f.cfActiveExit==='rental'?'active':''}">
+            <div class="cf-cmp-name">Rental</div>
+            <div class="cf-cmp-tag">Buy &amp; hold</div>
+            <div class="cf-cmp-net-label">Net / Month</div>
+            <div class="cf-cmp-net" style="color:${netColor(cr.rental.monthlyNet)}">${fmt(cr.rental.monthlyNet)}</div>
+            <div class="cf-cmp-roi">
+              <div class="row"><span class="row-label">Cash-on-Cash</span><span class="row-val">${fmtPct(cr.rental.ror)}</span></div>
+              <div class="row"><span class="row-label">Annual Net</span><span class="row-val">${fmt(cr.rental.annualNet)}</span></div>
+              <div class="row"><span class="row-label">Gross Rent</span><span class="row-val">${fmt(cr.rental.gross)}</span></div>
+            </div>
+          </div>
+        </div>
+        <p style="font-family:var(--body); font-size:12px; color:var(--ink-4); margin-top:14px;">All three exits share the same ${fmt(cr.entryFee)} entry fee and ${fmt(cr.notePayment)}/mo acquisition note. Wrap and Lease Option measure cash-on-cash after the buyer's down payment / option fee offsets your cash in; Rental measures against the full entry fee.</p>
+      </div>
+
+      ${commentaryHTML('creative', c)}
+    `;
+  }
+
   function renderSidebar() {
     const c = calculate();
     const main = document.getElementById('sidebar-main');
@@ -2806,6 +3499,10 @@
       legend.style.display = '';
       const ap = document.getElementById('grade-legend-ap');
       if (ap) ap.style.display = '';
+    } else if (state.mode === 'creative') {
+      main.innerHTML = creativeStatsCardHTML(c);
+      cmp.innerHTML = creativeComparePanelHTML(c);
+      legend.style.display = 'none';
     } else {
       main.innerHTML = rentalStatsCardHTML(c);
       cmp.innerHTML = '';
@@ -2924,6 +3621,39 @@
         </div>
       `;
       sections.innerHTML = brrrrReportSectionsHTML(c);
+    } else if (state.mode === 'creative') {
+      const cr = c.creative;
+      const exitName = f.cfActiveExit === 'wrap' ? 'Wrap' : f.cfActiveExit === 'lease_option' ? 'Lease Option' : 'Rental';
+      const ex = f.cfActiveExit === 'wrap' ? cr.wrap : f.cfActiveExit === 'lease_option' ? cr.lease : cr.rental;
+      const coc = f.cfActiveExit === 'wrap' ? cr.wrap.rorWithDP : f.cfActiveExit === 'lease_option' ? cr.lease.rorWithOF : cr.rental.ror;
+      const acqLabel = f.cfAcqType === 'seller_finance' ? 'Seller Finance' : f.cfAcqType === 'subto' ? 'SubTo' : 'Hybrid';
+      gradeBadge.textContent = 'CF';
+      gradeBadge.style.background = 'var(--atlas-gold)';
+      gradeBadge.style.fontSize = '14px';
+      gradeLabel.textContent = acqLabel + ' · ' + exitName;
+      keyMetrics.innerHTML = `
+        <div class="key-metric">
+          <div class="key-metric-label">${exitName} Net</div>
+          <div class="key-metric-val accent">${fmt(ex.monthlyNet)}</div>
+          <div class="key-metric-sub">per month</div>
+        </div>
+        <div class="key-metric">
+          <div class="key-metric-label">Cash-on-Cash</div>
+          <div class="key-metric-val ${coc >= 0 ? '' : 'bad'}">${fmtPct(coc)}</div>
+          <div class="key-metric-sub">annual return</div>
+        </div>
+        <div class="key-metric">
+          <div class="key-metric-label">Entry Fee</div>
+          <div class="key-metric-val">${fmt(cr.entryFee)}</div>
+          <div class="key-metric-sub">cash to acquire</div>
+        </div>
+        <div class="key-metric">
+          <div class="key-metric-label">Note Payment</div>
+          <div class="key-metric-val">${fmt(cr.notePayment)}</div>
+          <div class="key-metric-sub">monthly debt service</div>
+        </div>
+      `;
+      sections.innerHTML = creativeReportSectionsHTML(c);
     } else {
       // Rental Hold
       gradeBadge.textContent = c.grade;
@@ -3322,6 +4052,20 @@
         <p>Levers to pull if the recycle is weak: buy deeper below As-Is, sharpen the rehab scope (scope creep kills BRRRR margins), push the refi LTV to 75-80% if the DSCR supports it, or validate that your ARV comps actually hold up — appraiser haircuts are where BRRRRs die.</p>
       `;
       disclaimerText = 'BRRRR math: Phase 1 = Purchase + Rehab + Closing + Atlas Fee, financed per the acquisition product. Phase 2 = refi at ARV × LTV, paying off acquisition loan and refi closing, with any remainder pulled out as tax-free cash. Post-refi CoC is computed against cash left in deal. If cash left ≤ $0 and cash flow is positive, the grade is A+ (infinite return). ARV appraisals are the #1 BRRRR risk — always get a comp-based ARV validated by a second source before modeling.';
+    } else if (mode === 'creative') {
+      const cr = c.creative || {};
+      const exits = [
+        { name: 'a wrap', net: cr.wrap.monthlyNet, coc: cr.wrap.rorWithDP },
+        { name: 'a lease option', net: cr.lease.monthlyNet, coc: cr.lease.rorWithOF },
+        { name: 'a rental hold', net: cr.rental.monthlyNet, coc: cr.rental.ror },
+      ].sort((a,b) => b.net - a.net);
+      const best = exits[0];
+      const allNeg = cr.wrap.monthlyNet < 0 && cr.lease.monthlyNet < 0 && cr.rental.monthlyNet < 0;
+      ctaBody = `
+        <p>On this acquisition you're carrying <strong>${fmt(cr.notePayment)}/mo</strong> in debt service against <strong>${fmt(cr.totalDebt)}</strong> of debt, with <strong>${fmt(cr.entryFee)}</strong> of cash in. ${allNeg ? "Every exit is currently cash-flow negative — the spread isn't there yet. Push the acquisition terms (lower the seller payment, stretch the amortization, or drop the note rate) or raise the exit price/rent before you commit." : `Best monthly spread is <strong>${best.name.replace('a ','')}</strong> at <strong>${fmt(best.net)}/mo</strong> · <strong>${fmtPct(best.coc)}</strong> cash-on-cash.`}</p>
+        <p>The lever that moves creative deals is the <strong>spread between your acquisition note and the exit</strong>. On a wrap, that's the rate you charge the buyer over your note rate. On a lease option, it's the monthly lease over your carry. On a rental, it's rent minus full operating expenses including the note. Match the exit to the buyer pool that actually exists in the market — not just the best number on paper.</p>
+      `;
+      disclaimerText = 'Creative finance math: the acquisition note payment amortizes (or is interest-only if a balloon is set; 0% notes pay straight principal). Entry fee = cash to seller + arrears + cost of acquisition + closing + renovation + marketing + a maintenance reserve of 2× monthly carry. Acceleration insurance is tracked separately and excluded from the cash basis. Wrap and Lease Option cash-on-cash are measured after the buyer down payment / option fee offsets your cash in. SubTo carries due-on-sale risk — budget acceleration insurance and keep a refinance or payoff plan ready. Confirm the exit (wrap buyer, tenant-buyer, or rental demand) exists in your market before structuring.';
     } else {
       const atlasNote = f.includeAtlasFee ? ` The $${f.atlasFeeAmount.toLocaleString()} Atlas Acquisition Fee is baked into cash-in — that's why cash-on-cash came in where it did.` : ' Atlas Acquisition Fee is toggled off — re-enable to see true cost basis.';
       ctaBody = `
@@ -3335,7 +4079,7 @@
       <div class="split-grid">
         <div class="cta-dark">
           <div class="eyebrow">Atlas Underwriting</div>
-          <h3>${mode === 'wholesale' ? 'Wholesale exit commentary' : mode === 'novation' ? 'Novation exit commentary' : mode === 'brrrr' ? 'BRRRR capital recycle' : 'Deal decision criteria'}</h3>
+          <h3>${mode === 'wholesale' ? 'Wholesale exit commentary' : mode === 'novation' ? 'Novation exit commentary' : mode === 'brrrr' ? 'BRRRR capital recycle' : mode === 'creative' ? 'Creative finance exit strategy' : 'Deal decision criteria'}</h3>
           ${ctaBody}
         </div>
         <div class="disclaimer">
@@ -3362,7 +4106,7 @@
     document.getElementById('form-view').classList.add('hidden');
     document.getElementById('report-view').classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    const subs = { wholesale: 'Wholesale Deal Analysis', novation: 'Novation Deal Analysis', brrrr: 'BRRRR Deal Analysis', rental: 'Investment Property Analysis' };
+    const subs = { wholesale: 'Wholesale Deal Analysis', novation: 'Novation Deal Analysis', brrrr: 'BRRRR Deal Analysis', rental: 'Investment Property Analysis', creative: 'Creative Finance Analysis' };
     document.getElementById('masthead-sub').textContent = subs[state.mode];
     document.getElementById('report-actions').classList.remove('hidden');
   }
