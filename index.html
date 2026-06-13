@@ -1498,44 +1498,44 @@
       <div class="field-grid-2" style="margin-bottom: 16px;">
         <div>
           <label class="field-label">Seller Name</label>
-          <input type="text" class="text-input" id="f-sellerName" placeholder="John Doe">
+          <input type="text" class="text-input" id="f-sellerName" placeholder="Shanara Mobley">
         </div>
         <div>
           <label class="field-label">Property Address</label>
-          <input type="text" class="text-input" id="f-address" placeholder="123 Main St, Nowhere FL, 00000">
+          <input type="text" class="text-input" id="f-address" placeholder="6788 Langford St, Jacksonville FL 32219">
         </div>
       </div>
       <div class="field-grid-4">
         <div>
           <label class="field-label">Bedrooms</label>
-          <input type="number" step="0.5" class="num-input" id="f-beds" value="3">
+          <input type="number" step="0.5" class="num-input" id="f-beds" placeholder="3">
         </div>
         <div>
           <label class="field-label">Bathrooms</label>
-          <input type="number" step="0.25" class="num-input" id="f-baths" value="2">
+          <input type="number" step="0.25" class="num-input" id="f-baths" placeholder="2">
         </div>
         <div>
           <label class="field-label">Square Feet</label>
-          <input type="number" class="num-input" id="f-sqft" value="1400">
+          <input type="number" class="num-input" id="f-sqft" placeholder="1,400">
         </div>
         <div>
           <label class="field-label">Year Built</label>
-          <input type="number" class="num-input" id="f-yearBuilt" value="1980">
+          <input type="number" class="num-input" id="f-yearBuilt" value="1985">
         </div>
       </div>
       <div class="field-grid-3" style="margin-bottom: 0; margin-top: 4px;">
         <div>
           <label class="field-label">After Repair Value (ARV)</label>
-          <div class="input-money"><input type="number" class="num-input" id="f-arv" value="250000"></div>
+          <div class="input-money"><input type="number" class="num-input" id="f-arv" value="220000"></div>
         </div>
         <div>
           <label class="field-label">As-Is Value</label>
-          <div class="input-money"><input type="number" class="num-input" id="f-asIsValue" value="200000"></div>
+          <div class="input-money"><input type="number" class="num-input" id="f-asIsValue" value="180000"></div>
           <div class="field-hint" id="as-is-hint">Drives Novation MAO · doubles as Purchase Price in Rental mode</div>
         </div>
         <div>
           <label class="field-label">Mortgage Balance</label>
-          <div class="input-money"><input type="number" class="num-input" id="f-mortgageBalance" value="0"></div>
+          <div class="input-money"><input type="number" class="num-input" id="f-mortgageBalance" placeholder="0"></div>
           <div class="field-hint">Seller's payoff at close</div>
         </div>
       </div>
@@ -1635,12 +1635,12 @@
     step: 1,
     form: {
       // Property (uniform)
-      address: "", sellerName: "", beds: 3, baths: 2, sqft: 1400, yearBuilt: 1985,
+      address: "", sellerName: "", beds: null, baths: null, sqft: null, yearBuilt: null,
 
-      // Values
-      arv: 220000,
-      asIsValue: 180000,
-      mortgageBalance: 0,
+      // Values — null = empty, falsy by design so .toLocaleString() etc must guard with || 0
+      arv: null,
+      asIsValue: null,
+      mortgageBalance: null,
       appreciation: 3,
 
       // Purchase (rental)
@@ -1763,10 +1763,17 @@
     ['address','sellerName','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance'].forEach(key => {
       const el = document.getElementById('f-' + key);
       if (!el) return;
-      el.value = state.form[key];
+      el.value = (state.form[key] == null) ? '' : state.form[key];
       el.addEventListener('input', () => {
           const raw = el.value;
-          state.form[key] = (key === 'address' || key === 'sellerName') ? raw : (parseFloat(raw) || 0);
+          // For numeric fields: empty string → null (keeps placeholder); number → parseFloat
+          if (key === 'address' || key === 'sellerName') {
+            state.form[key] = raw;
+          } else if (raw === '' || raw == null) {
+            state.form[key] = null;
+          } else {
+            state.form[key] = parseFloat(raw) || 0;
+          }
           if (key === 'asIsValue' && (state.mode === 'rental' || state.mode === 'brrrr')) {
             state.form.purchasePrice = state.form.asIsValue;
           }
@@ -1875,7 +1882,19 @@
 
   // ============ MAIN CALCULATIONS ============
   function calculate() {
-    const f = state.form;
+    // Coerce null property/value fields to 0 for math. The form fields stay null
+    // (showing placeholders) until the user actually types something.
+    const fRaw = state.form;
+    const f = new Proxy(fRaw, {
+      get(target, prop) {
+        const v = target[prop];
+        // Only coerce these specific GHL-driven numeric fields. Everything else passes through.
+        if (['beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance'].includes(prop)) {
+          return v == null ? 0 : v;
+        }
+        return v;
+      }
+    });
     const repairCost = calcRehab();           // current mode's rehab — used for rental, sidebars, report
     const wsRepair   = calcRehab('wholesale'); // always uses wholesale's own rehab bucket
     const novRepair  = calcRehab('novation');  // always uses novation's own rehab bucket
@@ -2102,7 +2121,7 @@
         </div>
         ${lineRows}
         <div style="margin-top:10px; font-size:11px; color:var(--ink-4); font-style:italic;">
-          Sqft-based lines multiply by ${f.sqft.toLocaleString()} SF. "Other" is a fixed total line — use it for anything not in the standard items.
+          Sqft-based lines multiply by ${(f.sqft || 0).toLocaleString()} SF. "Other" is a fixed total line — use it for anything not in the standard items.
         </div>
       </div>
     `;
@@ -2667,7 +2686,7 @@
         </div>
         ${rows}
         <div class="sidebar-rehab-footer">
-          Sqft lines × ${f.sqft.toLocaleString()} SF (from property bar). Rehab scope is saved per exit strategy.
+          Sqft lines × ${(f.sqft || 0).toLocaleString()} SF (from property bar). Rehab scope is saved per exit strategy.
         </div>
       </div>
     `;
@@ -2799,7 +2818,7 @@
     document.getElementById('rpt-address').textContent = f.address || "Property Address";
     document.getElementById('rpt-beds').textContent = `${f.beds} BD`;
     document.getElementById('rpt-baths').textContent = `${f.baths} BA`;
-    document.getElementById('rpt-sqft').textContent = `${f.sqft.toLocaleString()} SF`;
+    document.getElementById('rpt-sqft').textContent = `${(f.sqft || 0).toLocaleString()} SF`;
     document.getElementById('rpt-year').textContent = `Built ${f.yearBuilt}`;
 
     const gradeBadge = document.getElementById('rpt-grade');
@@ -3363,15 +3382,22 @@
   function ingestUrlParams() {
     const params = new URLSearchParams(window.location.search);
     if (params.toString().length === 0) return;
+    // Numeric URL param helper: returns null for empty/invalid input, number otherwise.
+    // This is what makes "blank GHL field" → "blank analyzer field with placeholder" work.
+    const num = (v) => {
+      if (v == null || v === '') return null;
+      const n = parseFloat(v);
+      return isNaN(n) ? null : n;
+    };
     const map = {
       address:       v => state.form.address = decodeURIComponent(v),
-      beds:          v => state.form.beds = parseFloat(v) || state.form.beds,
-      baths:         v => state.form.baths = parseFloat(v) || state.form.baths,
-      sqft:          v => state.form.sqft = parseFloat(v) || state.form.sqft,
-      year:          v => state.form.yearBuilt = parseInt(v) || state.form.yearBuilt,
-      arv:           v => state.form.arv = parseFloat(v) || state.form.arv,
-      as_is:         v => state.form.asIsValue = parseFloat(v) || state.form.asIsValue,
-      mortgage:      v => state.form.mortgageBalance = parseFloat(v) || 0,
+      beds:          v => state.form.beds = num(v),
+      baths:         v => state.form.baths = num(v),
+      sqft:          v => state.form.sqft = num(v),
+      year:          v => { const n = parseInt(v); state.form.yearBuilt = isNaN(n) ? null : n; },
+      arv:           v => state.form.arv = num(v),
+      as_is:         v => state.form.asIsValue = num(v),
+      mortgage:      v => state.form.mortgageBalance = num(v),
       purchase:      v => state.form.purchasePrice = parseFloat(v) || state.form.purchasePrice,
       monthly_rent:  v => state.form.monthlyRent = parseFloat(v) || state.form.monthlyRent,
       contact_id:    v => ghlContext.contactId = decodeURIComponent(v),
