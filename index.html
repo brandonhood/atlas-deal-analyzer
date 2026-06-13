@@ -1469,8 +1469,12 @@
    
     <div class="report-actions no-print hidden" id="report-actions">
       <button class="btn-print" onclick="window.print()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-        Print
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        Save PDF
+      </button>
+      <button class="btn-print" onclick="saveDealToGhl(this)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        Send to Slack
       </button>
       <button class="btn-edit" onclick="editDeal()">Edit Deal</button>
     </div>
@@ -3357,6 +3361,7 @@
     renderReport();
     document.getElementById('form-view').classList.add('hidden');
     document.getElementById('report-view').classList.remove('hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     const subs = { wholesale: 'Wholesale Deal Analysis', novation: 'Novation Deal Analysis', brrrr: 'BRRRR Deal Analysis', rental: 'Investment Property Analysis' };
     document.getElementById('masthead-sub').textContent = subs[state.mode];
     document.getElementById('report-actions').classList.remove('hidden');
