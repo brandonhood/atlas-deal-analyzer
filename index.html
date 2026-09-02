@@ -191,6 +191,17 @@
     color: var(--ink-3);
     font-style: italic;
   }
+  .link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: 12px;
+    color: var(--atlas-red);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .property-bar-actions { margin-left: auto; white-space: nowrap; font-size: 12px; }
 
   /* ============ MODE SELECTOR ============ */
   .mode-selector {
@@ -1377,6 +1388,18 @@
     border: 1px solid var(--rule);
     font-variant-numeric: tabular-nums;
   }
+  .ghl-banner button {
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .ghl-banner button:hover { border-color: var(--atlas-red); color: var(--atlas-red); }
 
   .btn-save-ghl {
     background: var(--atlas-charcoal);
@@ -1507,6 +1530,10 @@
     </div>
    
     <div class="report-actions no-print hidden" id="report-actions">
+      <button class="btn-print" onclick="copyLink()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        Copy Link
+      </button>
       <button class="btn-print" onclick="window.print()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
         Save PDF
@@ -1537,6 +1564,7 @@
       <div class="property-bar-head">
         <span class="property-bar-title">Subject Property</span>
         <span class="property-bar-hint">These inputs apply across every exit strategy.</span>
+        <span class="property-bar-actions"><button type="button" class="link-btn" onclick="copyLink()">Copy link</button><span style="color:var(--ink-4);margin:0 6px;">·</span><button type="button" class="link-btn" onclick="newDeal()">New deal</button></span>
       </div>
       <div class="field-grid-2" style="margin-bottom: 16px;">
         <div>
@@ -4845,10 +4873,169 @@
     document.title = ORIGINAL_TITLE;
   });
 
-  try { ingestUrlParams(); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
+  // ============ PERSISTENCE (URL hash + localStorage) ============
+  // Every edit is debounced into location.hash ("#d=<url-safe base64 json>") and localStorage, so a
+  // refresh or a copied link restores the exact deal. No render function is touched: saves are triggered
+  // by document-level input/change/click listeners plus a MutationObserver (any re-render → save).
+  const SAVE_KEY = 'atlas-deal-analyzer:last';
+  let saveTimer = null;
+  let saveDisabled = false;   // set by newDeal() so a pending save can't resurrect the cleared deal
+
+  function serializeState() {
+    return { v: 1, mode: state.mode, step: state.step, form: state.form };
+  }
+
+  function encodeState(obj) {
+    const json = JSON.stringify(obj);
+    return btoa(unescape(encodeURIComponent(json))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function decodeState(str) {
+    try {
+      let b64 = String(str || '').replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      const obj = JSON.parse(decodeURIComponent(escape(atob(b64))));
+      return (obj && typeof obj === 'object') ? obj : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Copies only keys that already exist in state.form, so fields added later keep their defaults.
+  // Rehab is merged per mode / per line (rate + on only) so labels and units stay code-owned.
+  function applyState(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+    const src = obj.form;
+    if (src && typeof src === 'object') {
+      for (const key of Object.keys(state.form)) {
+        if (!has(src, key)) continue;
+        if (key !== 'rehab') { state.form[key] = src[key]; continue; }
+        const rehab = src.rehab;
+        if (!rehab || typeof rehab !== 'object') continue;
+        for (const mode of Object.keys(state.form.rehab)) {
+          const lines = rehab[mode];
+          if (!lines || typeof lines !== 'object') continue;
+          for (const lineKey of Object.keys(state.form.rehab[mode])) {
+            const line = lines[lineKey];
+            if (!line || typeof line !== 'object') continue;
+            if (has(line, 'rate')) state.form.rehab[mode][lineKey].rate = line.rate;
+            if (has(line, 'on')) state.form.rehab[mode][lineKey].on = line.on;
+          }
+        }
+      }
+    }
+    if (typeof obj.mode === 'string' && has(STEP_CONFIGS, obj.mode)) state.mode = obj.mode;
+    const step = parseInt(obj.step, 10);
+    if (step >= 1 && step <= STEP_CONFIGS[state.mode].length) state.step = step;
+    return true;
+  }
+
+  function persistNow() {
+    saveTimer = null;
+    if (saveDisabled) return;
+    let snapshot;
+    try { snapshot = serializeState(); } catch (e) { return; }
+    try { history.replaceState(null, '', location.pathname + location.search + '#d=' + encodeState(snapshot)); } catch (e) {}
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot)); } catch (e) {}
+  }
+  function scheduleSave() {
+    if (saveDisabled) return;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(persistNow, 400);
+  }
+  function flushSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    persistNow();
+  }
+  document.addEventListener('input', scheduleSave, true);
+  document.addEventListener('change', scheduleSave, true);
+  document.addEventListener('click', scheduleSave, true);
+
+  function copyLink() {
+    flushSave();
+    const url = location.href;
+    const done = () => showToast('Link copied — it restores this exact deal.', 'success');
+    const fallback = () => {
+      let ok = false;
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) { ok = false; }
+      if (ok) done(); else showToast('Could not copy — use the address bar URL instead.', 'error');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function newDeal() {
+    if (!confirm('Start a new deal? This clears the current inputs.')) return;
+    saveDisabled = true;
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+    location.replace(location.pathname);
+  }
+
+  // Restore banner — reuses the #ghl-banner element/styles. Only shown when the deal came from localStorage.
+  function renderRestoreBanner() {
+    const banner = document.getElementById('ghl-banner');
+    if (!banner) return;
+    const addr = (state.form.address || '').trim();
+    const label = addr ? addr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Untitled deal';
+    banner.innerHTML = `
+      <span class="ghl-banner-dot"></span>
+      <span class="ghl-banner-text">Restored your last deal · <strong>${label}</strong></span>
+      <button type="button" onclick="document.getElementById('ghl-banner').style.display = 'none'">Keep</button>
+      <button type="button" onclick="newDeal()">Start new deal</button>
+    `;
+    banner.style.display = 'flex';
+  }
+
+  function restoreFromStorage() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { saved = null; }
+    if (!saved || typeof saved !== 'object' || !saved.form) return false;
+    applyState(saved);
+    renderRestoreBanner();
+    return true;
+  }
+
+  // ============ INIT ============
+  // Precedence: shared link (#d=) → GHL deep link (?params on fresh defaults) → last local deal → defaults.
+  // With a shared link, explicit GHL params still override the property fields.
+  if (location.hash.indexOf('#d=') === 0) {
+    applyState(decodeState(location.hash.slice(3)));
+    try { ingestUrlParams(); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
+  } else if (location.search.length > 1) {
+    try { ingestUrlParams(); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
+  } else {
+    restoreFromStorage();
+  }
   bindPropertyBar();
-  setMode('wholesale');
+  const initialStep = state.step;                              // setMode() resets step to 1
+  const initialPurchasePrice = state.form.purchasePrice;       // setMode() re-derives it from As-Is for rental/BRRRR
+  setMode(state.mode);
+  state.form.purchasePrice = initialPurchasePrice;
+  goToStep(initialStep);
   renderGhlBanner();
+  // Programmatic state changes (update(), updateRehab(), mode/step switches) always re-render into #form-view or
+  // #report-view, so watch those roots instead of editing each render function. Scoped to the app roots (not body)
+  // and started after init, so parser-appended nodes or browser extensions never persist an untouched load.
+  const saveObserver = new MutationObserver(scheduleSave);
+  ['form-view', 'report-view'].forEach(id => {
+    const root = document.getElementById(id);
+    if (root) saveObserver.observe(root, { childList: true, subtree: true, characterData: true });
+  });
 </script>
 
 </body>
