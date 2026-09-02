@@ -2190,7 +2190,7 @@
       const acqRate = f.brrrrAcqRate / 100 / 12;
       const acqMonthlyPayment = (acqLoan === 0) ? 0
         : (f.brrrrAcqIO ? acqLoan * acqRate
-          : (acqLoan * (acqRate * Math.pow(1 + acqRate, 360))) / (Math.pow(1 + acqRate, 360) - 1));
+          : cfAmortizedPayment(acqLoan, f.brrrrAcqRate, 360));
       const seasoningDebtService = acqMonthlyPayment * f.brrrrSeasoningMonths;
 
       // ==== PHASE 2: REFI ====
@@ -2206,7 +2206,7 @@
       const refiRate = f.brrrrRefiRate / 100 / 12;
       const refiN = f.brrrrRefiTerm * 12;
       const refiMonthlyPI = refiLoan <= 0 ? 0
-        : (refiLoan * (refiRate * Math.pow(1 + refiRate, refiN))) / (Math.pow(1 + refiRate, refiN) - 1);
+        : cfAmortizedPayment(refiLoan, f.brrrrRefiRate, refiN);
 
       totalCashInDeal = cashLeftInDeal;     // POST-REFI cash-in-deal (the number CoC is computed against)
       loanAmount = refiLoan;                // post-refi loan balance
@@ -2233,7 +2233,7 @@
       monthlyRate = f.interestRate / 100 / 12;
       const n = f.loanTerm * 12;
       monthlyPI = f.allCash ? 0
-        : (loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, n))) / (Math.pow(1 + monthlyRate, n) - 1);
+        : cfAmortizedPayment(loanAmount, f.interestRate, n);
     }
 
     const grossMonthly = f.monthlyRent + f.otherIncome;
