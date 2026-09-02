@@ -1106,6 +1106,8 @@
     color: var(--ink);
     line-height: 1.1;
   }
+  .property-seller { margin-top: 6px; font-size: 13px; color: var(--ink-3); }
+  .property-seller strong { color: var(--ink); font-weight: 600; }
   .property-specs {
     display: flex;
     gap: 16px;
@@ -1652,6 +1654,7 @@
         <div style="flex: 1;">
           <div class="section-eyebrow">Subject Property</div>
           <h1 class="property-title" id="rpt-address">Property Address</h1>
+          <div class="property-seller" id="rpt-seller"></div>
           <div class="property-specs">
             <span id="rpt-beds">3 BD</span><span class="spec-divider">·</span>
             <span id="rpt-baths">2 BA</span><span class="spec-divider">·</span>
@@ -1662,6 +1665,7 @@
         <div>
           <div class="grade-badge lg" id="rpt-grade">A</div>
           <div class="grade-label" id="rpt-grade-label">Deal Grade</div>
+          <div class="grade-label rpt-date" style="margin-top:6px;letter-spacing:0.08em;"></div>
         </div>
       </div>
       <div class="key-metrics" id="rpt-key-metrics"></div>
@@ -1829,8 +1833,17 @@
   };
 
   // ============ UTILS ============
-  const fmt = (n) => (n === undefined || isNaN(n)) ? "$0" : "$" + Math.round(n).toLocaleString();
-  const fmtPct = (n) => isNaN(n) ? "0.0%" : n.toFixed(1) + "%";
+  const fmt = (n) => {
+    if (n === undefined || n === null || isNaN(n)) return "$0";
+    const r = Math.round(n);
+    if (r === 0) return "$0";
+    return (r < 0 ? "−$" : "$") + Math.abs(r).toLocaleString();
+  };
+  const fmtPct = (n) => {
+    if (n === undefined || n === null || isNaN(n)) return "0.0%";
+    const s = Math.abs(n).toFixed(1);
+    return (n < 0 && s !== "0.0" ? "−" : "") + s + "%";
+  };
 
   // One rent number, mirrored across every visible rent input (property bar + creative + rental + brrrr)
   function syncRentInputs(n, src) {
@@ -3722,10 +3735,36 @@
     const f = state.form;
     const c = calculate();
     document.getElementById('rpt-address').textContent = f.address || "Property Address";
-    document.getElementById('rpt-beds').textContent = `${f.beds} BD`;
-    document.getElementById('rpt-baths').textContent = `${f.baths} BA`;
-    document.getElementById('rpt-sqft').textContent = `${(f.sqft || 0).toLocaleString()} SF`;
-    document.getElementById('rpt-year').textContent = `Built ${f.yearBuilt}`;
+    const sellerEl = document.getElementById('rpt-seller');
+    const sellerName = (f.sellerName || ghlContext.contactName || '').trim();
+    if (sellerName) {
+      sellerEl.innerHTML = 'Seller · <strong>' + sellerName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</strong>';
+      sellerEl.style.display = '';
+    } else {
+      sellerEl.style.display = 'none';
+    }
+    // Specs: hide any span whose value is missing (null beds/baths/year, 0 sqft),
+    // then show a divider only when it sits between two visible spans.
+    const setSpec = (id, present, text) => {
+      const el = document.getElementById(id);
+      el.textContent = present ? text : '';
+      el.style.display = present ? '' : 'none';
+    };
+    setSpec('rpt-beds', f.beds != null, `${f.beds} BD`);
+    setSpec('rpt-baths', f.baths != null, `${f.baths} BA`);
+    setSpec('rpt-sqft', f.sqft > 0, `${(f.sqft || 0).toLocaleString()} SF`);
+    setSpec('rpt-year', f.yearBuilt != null, `Built ${f.yearBuilt}`);
+    let pendingDivider = null, anySpecVisible = false;
+    Array.from(document.getElementById('rpt-beds').parentElement.children).forEach(ch => {
+      if (ch.classList.contains('spec-divider')) {
+        ch.style.display = 'none';
+        if (anySpecVisible) pendingDivider = ch;
+      } else if (ch.style.display !== 'none') {
+        if (pendingDivider) pendingDivider.style.display = '';
+        pendingDivider = null;
+        anySpecVisible = true;
+      }
+    });
 
     const gradeBadge = document.getElementById('rpt-grade');
     const gradeLabel = document.getElementById('rpt-grade-label');
