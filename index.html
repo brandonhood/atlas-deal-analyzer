@@ -4316,7 +4316,7 @@
       return isNaN(n) ? null : n;
     };
     const map = {
-      address:       v => state.form.address = decodeURIComponent(v),
+      address:       v => state.form.address = v,
       beds:          v => state.form.beds = num(v),
       baths:         v => state.form.baths = num(v),
       sqft:          v => state.form.sqft = num(v),
@@ -4334,24 +4334,29 @@
       insurance:     v => { const n = num(v); if (n != null) state.form.cfInsuranceMonthly = n; },
       hoa:           v => { const n = num(v); if (n != null) state.form.cfHoaMonthly = n; },
       market_rent:   v => { const n = num(v); if (n != null) state.form.monthlyRent = n; },
-      contact_id:    v => ghlContext.contactId = decodeURIComponent(v),
+      contact_id:    v => ghlContext.contactId = v,
       contact_name:  v => {
-        const decoded = decodeURIComponent(v);
-        ghlContext.contactName = decoded;
-        state.form.sellerName = decoded;
+        ghlContext.contactName = v;
+        state.form.sellerName = v;
       },
     };
     let anyApplied = false;
     for (const [key, raw] of params.entries()) {
-      const fn = map[key];
-      if (fn && raw) {
-        fn(raw);
-        if (key !== 'contact_id' && key !== 'contact_name') anyApplied = true;
+      try {
+        const fn = map[key];
+        if (fn && raw) {
+          fn(raw);
+          if (key !== 'contact_id' && key !== 'contact_name') anyApplied = true;
+        }
+      } catch (e) {
+        console.warn('ingestUrlParams: skipping malformed param "' + key + '"', e);
+        continue;
       }
     }
     ghlContext.prefilled = anyApplied;
   }
 
+  function escapeHTML(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch])); }
   function renderGhlBanner() {
     if (!ghlContext.prefilled) return;
     const banner = document.getElementById('ghl-banner');
@@ -4359,8 +4364,8 @@
     const name = ghlContext.contactName || 'GHL contact';
     banner.innerHTML = `
       <span class="ghl-banner-dot"></span>
-      <span class="ghl-banner-text">Pre-filled from GHL · <strong>${name}</strong></span>
-      ${ghlContext.contactId ? `<span class="ghl-banner-id">ID ${ghlContext.contactId.substring(0, 8)}…</span>` : ''}
+      <span class="ghl-banner-text">Pre-filled from GHL · <strong>${escapeHTML(name)}</strong></span>
+      ${ghlContext.contactId ? `<span class="ghl-banner-id">ID ${escapeHTML(ghlContext.contactId.substring(0, 8))}…</span>` : ''}
     `;
     banner.style.display = 'flex';
   }
@@ -4579,7 +4584,7 @@
     document.title = ORIGINAL_TITLE;
   });
 
-  ingestUrlParams();
+  try { ingestUrlParams(); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
   bindPropertyBar();
   setMode('wholesale');
   renderGhlBanner();
