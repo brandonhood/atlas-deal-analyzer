@@ -257,9 +257,11 @@
   }
   .mode-btn.active .mode-btn-sub { color: var(--atlas-gold-dark); }
   @media (max-width: 640px) {
-    .mode-btn-group { grid-template-columns: repeat(2, 1fr); }
+    .mode-btn-group { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); align-items: stretch; }
     .mode-btn { padding: 10px 12px; text-align: center; align-items: center; }
     .mode-btn-sub { display: none; }
+    .mode-btn-label { font-size: 13px; }
+    .mode-btn { min-height: 44px; justify-content: center; }
   }
 
   /* ============ STEPPER ============ */
@@ -1484,6 +1486,19 @@
     .cf-seg-btn { align-items: center; text-align: center; }
     .cf-cmp { grid-template-columns: 1fr; }
   }
+
+  /* ============ MOBILE RESULTS BAR ============ */
+  .mobile-bar { display: none; }
+  @media (max-width: 900px) {
+    .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; align-items: center; gap: 12px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--atlas-charcoal); color: white; box-shadow: 0 -6px 20px rgba(15,20,25,.25); }
+    .mobile-bar[hidden] { display: none; }
+    .mobile-bar-main { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .mobile-bar-label { font-family: var(--accent); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #B8BCC4; }
+    .mobile-bar-val { font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mobile-bar-badge { font-family: var(--display); font-weight: 800; font-size: 14px; padding: 4px 10px; border-radius: 6px; background: var(--atlas-gold); color: white; }
+    .mobile-bar-btn { background: var(--atlas-red); color: white; border: none; border-radius: 8px; padding: 10px 12px; font-family: var(--display); font-weight: 700; font-size: 12px; cursor: pointer; }
+    .page { padding-bottom: 96px; }
+  }
 </style>
 </head>
 <body>
@@ -1643,6 +1658,8 @@
     </div>
   </div>
 </div>
+
+<div class="mobile-bar no-print" id="mobile-bar" hidden><div class="mobile-bar-main"><span class="mobile-bar-label" id="mobile-bar-label"></span><span class="mobile-bar-val" id="mobile-bar-val"></span></div><span class="mobile-bar-badge" id="mobile-bar-badge"></span><button type="button" class="mobile-bar-btn" onclick="document.getElementById('sidebar-main').scrollIntoView({behavior:'smooth', block:'start'})">Details ↓</button></div>
 
 <!-- ============ REPORT VIEW ============ -->
 <div id="report-view" class="hidden">
@@ -2908,6 +2925,7 @@
     }
     const math = document.getElementById('offer-math');
     if (math) math.outerHTML = offerMathHTML(mode, c).trim();
+    refreshMobileBar();
   }
 
   // ============ COMPARE PANEL ============
@@ -3687,6 +3705,48 @@
       const ap = document.getElementById('grade-legend-ap');
       if (ap) ap.style.display = 'none';
     }
+    refreshMobileBar();
+  }
+
+  // ============ MOBILE RESULTS BAR (sticky headline number on phones) ============
+  function refreshMobileBar() {
+    const bar = document.getElementById('mobile-bar');
+    if (!bar) return;
+    const c = calculate();
+    const f = state.form;
+    let label, val, badge, badgeBg;
+    if (state.mode === 'wholesale') {
+      label = 'Wholesale MAO';
+      val = f.arv > 0 ? fmt(c.wholesaleMAO) : 'Enter ARV';
+      badge = 'W'; badgeBg = 'var(--atlas-charcoal-2)';
+    } else if (state.mode === 'novation') {
+      label = 'Novation MAO';
+      val = f.asIsValue > 0 ? fmt(c.novationMAO) : 'Enter As-Is';
+      badge = 'N'; badgeBg = 'var(--atlas-gold-dark)';
+    } else if (state.mode === 'brrrr') {
+      const b = c.brrrr;
+      if (b && b.cashLeftInDeal <= 0) { label = 'Capital'; val = 'Fully recycled'; }
+      else { label = 'Cash Left in Deal'; val = fmt(b ? b.cashLeftInDeal : 0); }
+      badge = c.grade; badgeBg = c.gradeColor;
+    } else if (state.mode === 'creative') {
+      const cr = c.creative;
+      const exitName = f.cfActiveExit === 'wrap' ? 'Wrap' : f.cfActiveExit === 'lease_option' ? 'Lease Option' : 'Rental';
+      const ex = cr ? (f.cfActiveExit === 'wrap' ? cr.wrap : f.cfActiveExit === 'lease_option' ? cr.lease : cr.rental) : null;
+      label = exitName + ' Net / mo';
+      val = fmt(ex ? ex.monthlyNet : 0);
+      badge = f.cfAcqType === 'seller_finance' ? 'Seller Fin' : f.cfAcqType === 'subto' ? 'SubTo' : 'Hybrid';
+      badgeBg = 'var(--atlas-gold)';
+    } else {
+      label = 'Cash Flow / mo';
+      val = fmt(c.cashFlowMonthly);
+      badge = c.grade; badgeBg = c.gradeColor;
+    }
+    document.getElementById('mobile-bar-label').textContent = label;
+    document.getElementById('mobile-bar-val').textContent = val;
+    const badgeEl = document.getElementById('mobile-bar-badge');
+    badgeEl.textContent = badge;
+    badgeEl.style.background = badgeBg;
+    bar.hidden = document.getElementById('form-view').classList.contains('hidden');
   }
 
   // ============ REPORT RENDER ============
@@ -4286,6 +4346,7 @@
     const subs = { wholesale: 'Wholesale Deal Analysis', novation: 'Novation Deal Analysis', brrrr: 'BRRRR Deal Analysis', rental: 'Investment Property Analysis', creative: 'Creative Finance Analysis' };
     document.getElementById('masthead-sub').textContent = subs[state.mode];
     document.getElementById('report-actions').classList.remove('hidden');
+    refreshMobileBar();
   }
 
   function editDeal() {
@@ -4293,6 +4354,7 @@
     document.getElementById('report-view').classList.add('hidden');
     document.getElementById('masthead-sub').textContent = 'Deal Analyzer · Wholesale · Novation · Rental';
     document.getElementById('report-actions').classList.add('hidden');
+    refreshMobileBar();
   }
 
   function render() {
