@@ -1559,7 +1559,7 @@
         </div>
         <div>
           <label class="field-label">Square Feet</label>
-          <input type="number" class="num-input" id="f-sqft" placeholder="1,400">
+          <input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-sqft" placeholder="1,400" onblur="fmtOnBlur(this)">
         </div>
         <div>
           <label class="field-label">Year Built</label>
@@ -1569,21 +1569,21 @@
       <div class="field-grid-4" style="margin-bottom: 0; margin-top: 4px;">
         <div>
           <label class="field-label">After Repair Value (ARV)</label>
-          <div class="input-money"><input type="number" class="num-input" id="f-arv" placeholder="250,000"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-arv" placeholder="250,000" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">As-Is Value</label>
-          <div class="input-money"><input type="number" class="num-input" id="f-asIsValue" placeholder="200,000"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-asIsValue" placeholder="200,000" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint" id="as-is-hint">Drives Novation MAO · doubles as Purchase Price in Rental mode</div>
         </div>
         <div>
           <label class="field-label">Mortgage Balance</label>
-          <div class="input-money"><input type="number" class="num-input" id="f-mortgageBalance" placeholder="0"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-mortgageBalance" placeholder="0" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Seller's payoff at close</div>
         </div>
         <div>
           <label class="field-label">Rent Rate</label>
-          <div class="input-money"><input type="number" class="num-input js-rent-input" id="f-monthlyRent" placeholder="1,500"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input js-rent-input" id="f-monthlyRent" placeholder="1,500" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Market rent · feeds wrap, lease &amp; rental</div>
         </div>
       </div>
@@ -1620,7 +1620,7 @@
     </div>
 
     <!-- STEPPER -->
-    <nav class="stepper" id="stepper"></nav>
+    <nav class="stepper" id="stepper" aria-label="Steps"></nav>
 
     <div class="main-grid">
       <div class="card">
@@ -1851,19 +1851,26 @@
     const s = Math.abs(n).toFixed(1);
     return (n < 0 && s !== "0.0" ? "−" : "") + s + "%";
   };
+  // Formatted money/number inputs: parse "250,000" -> 250000; render 250000 -> "250,000"
+  const parseNum = v => { if (v == null) return 0; const s = String(v).replace(/[^0-9.\-]/g, ""); const n = parseFloat(s); return isNaN(n) ? 0 : n; };
+  const fmtInput = n => (n == null || n === "" || isNaN(n)) ? "" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  function fmtOnBlur(el) { el.value = el.value.trim() === "" ? "" : fmtInput(parseNum(el.value)); }
 
   // One rent number, mirrored across every visible rent input (property bar + creative + rental + brrrr)
   function syncRentInputs(n, src) {
-    const disp = (n == null || n === 0) ? '' : n;
+    const disp = (n == null || n === 0) ? '' : fmtInput(n);
     document.querySelectorAll('.js-rent-input').forEach(el => { if (el !== src && el !== document.activeElement) el.value = disp; });
   }
 
   // Hook up always-visible property-bar inputs (they persist across modes)
   function bindPropertyBar() {
+    const moneyKeys = ['sqft','arv','asIsValue','mortgageBalance','monthlyRent'];  // formatted text inputs (thousands separators)
     ['address','sellerName','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance','monthlyRent'].forEach(key => {
       const el = document.getElementById('f-' + key);
       if (!el) return;
-      el.value = (state.form[key] == null || (key === 'monthlyRent' && !state.form[key])) ? '' : state.form[key];
+      const isMoney = moneyKeys.includes(key);
+      el.value = (state.form[key] == null || (key === 'monthlyRent' && !state.form[key])) ? '' : (isMoney ? fmtInput(state.form[key]) : state.form[key]);
+      if (isMoney) el.addEventListener('blur', () => fmtOnBlur(el));
       el.addEventListener('input', () => {
           const raw = el.value;
           // For numeric fields: empty string → null (keeps placeholder); number → parseFloat
@@ -1872,7 +1879,7 @@
           } else if (raw === '' || raw == null) {
             state.form[key] = (key === 'monthlyRent') ? 0 : null;
           } else {
-            state.form[key] = parseFloat(raw) || 0;
+            state.form[key] = isMoney ? parseNum(raw) : (parseFloat(raw) || 0);
           }
           if (key === 'asIsValue' && (state.mode === 'rental' || state.mode === 'brrrr')) {
             syncPurchasePriceFromAsIs();
@@ -1887,6 +1894,21 @@
         });
     });
   }
+
+  // Runtime accessibility: give every field-label's control an aria-label (no template edits needed)
+  function labelInputs(root) {
+    (root || document).querySelectorAll("label.field-label").forEach(lab => {
+      if (lab.htmlFor) return;
+      const box = lab.parentElement;
+      const ctl = box && box.querySelector("input, select");
+      if (ctl && !ctl.getAttribute("aria-label")) ctl.setAttribute("aria-label", lab.textContent.replace(/\s+/g, " ").trim());
+    });
+  }
+  ['step-content', 'sidebar-main', 'compare-panel-container'].forEach(id => {
+    const target = document.getElementById(id);
+    if (target) new MutationObserver(() => labelInputs(target)).observe(target, { childList: true, subtree: true });
+  });
+  labelInputs(document);
 
   function update(key, val) {
     state.form[key] = val;
@@ -1912,7 +1934,7 @@
     if (typeof f.asIsValue !== 'number' || !(f.asIsValue > 0)) return;
     f.purchasePrice = f.asIsValue;
     const ppEl = document.getElementById('f-purchasePrice');
-    if (ppEl && ppEl !== document.activeElement) ppEl.value = f.purchasePrice;
+    if (ppEl && ppEl !== document.activeElement) ppEl.value = fmtInput(f.purchasePrice);
   }
 
   function resetPurchasePrice() {
@@ -1987,6 +2009,7 @@
     }
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
+      btn.setAttribute('aria-pressed', btn.dataset.mode === mode ? 'true' : 'false');
     });
     const eyebrow = document.getElementById('hero-eyebrow');
     const title = document.getElementById('hero-title');
@@ -2397,7 +2420,7 @@
       const active = state.step === s.num;
       const done = state.step > s.num;
       const cls = active ? 'step-btn active' : done ? 'step-btn done' : 'step-btn';
-      return `<button class="${cls}" onclick="goToStep(${s.num})">
+      return `<button class="${cls}"${active ? ' aria-current="step"' : ''} onclick="goToStep(${s.num})">
         ${icons[s.icon]}
         <span class="step-label">${s.label}</span>
         <span class="step-kicker">${s.kicker}</span>
@@ -2413,11 +2436,11 @@
     const lineRows = Object.keys(rb).map(k => {
       const line = rb[k];
       const rateDisplay = line.unit === 'total'
-        ? `<div class="input-money"><input type="number" class="num-input" value="${line.rate}" oninput="updateRehab('${k}', 'rate', parseFloat(this.value)||0)"></div>`
-        : `<input type="number" class="num-input" value="${line.rate}" oninput="updateRehab('${k}', 'rate', parseFloat(this.value)||0)">`;
+        ? `<div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>`
+        : `<input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', parseNum(this.value))" onblur="fmtOnBlur(this)">`;
       return `
         <div class="rehab-row ${line.on ? '' : 'inactive'}">
-          <input type="checkbox" ${line.on ? 'checked' : ''} onchange="updateRehab('${k}', 'on', this.checked)">
+          <input type="checkbox" ${line.on ? 'checked' : ''} aria-label="${line.label}" onchange="updateRehab('${k}', 'on', this.checked)">
           <span class="rehab-name">${line.label}</span>
           ${rateDisplay}
           <span class="rehab-unit">${line.unit === 'total' ? 'total' : '$/' + line.unit}</span>
@@ -2465,12 +2488,12 @@
             <div class="field-grid-2">
               <div>
                 <label class="field-label">Wholesale Fee</label>
-                <div class="input-money"><input type="number" class="num-input" value="${f.wholesaleFee}" oninput="update('wholesaleFee', parseFloat(this.value)||0)"></div>
+                <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.wholesaleFee)}" oninput="update('wholesaleFee', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
                 <div class="field-hint">Default $25,000 — your assignment spread</div>
               </div>
               <div>
                 <label class="field-label">Rehabber Profit (calculated)</label>
-                <div class="input-money"><input type="number" class="num-input" value="${Math.round(c.rehabberProfit)}" disabled style="opacity:0.7; cursor:not-allowed;"></div>
+                <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(Math.round(c.rehabberProfit))}" onblur="fmtOnBlur(this)" disabled style="opacity:0.7; cursor:not-allowed;"></div>
                 <div class="field-hint">Auto: $30K if ARV &lt; $350K · else 10% of ARV</div>
               </div>
             </div>
@@ -2498,7 +2521,7 @@
             <div class="field-grid-2">
               <div>
                 <label class="field-label">Novation Profit</label>
-                <div class="input-money"><input type="number" class="num-input" value="${f.novationProfit}" oninput="update('novationProfit', parseFloat(this.value)||0)"></div>
+                <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.novationProfit)}" oninput="update('novationProfit', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
                 <div class="field-hint">Default $25,000 — your spread</div>
               </div>
             </div>
@@ -2527,12 +2550,12 @@
           <div class="field-grid-2">
             <div>
               <label class="field-label">Purchase Price</label>
-              <div class="input-money"><input type="number" class="num-input" id="f-purchasePrice" placeholder="As-Is value" value="${f.purchasePrice || ''}" oninput="update('purchasePrice', parseFloat(this.value)||0)"></div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-purchasePrice" placeholder="As-Is value" value="${fmtInput(f.purchasePrice || '')}" oninput="update('purchasePrice', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
               <div class="field-hint">As-Is default · edit for negotiated price${f.purchasePriceTouched ? '<a href="#" onclick="resetPurchasePrice(); return false;" style="font-size:11px;color:var(--atlas-red);margin-left:6px;">Reset to As-Is</a>' : ''}</div>
             </div>
             <div>
               <label class="field-label">Closing Costs</label>
-              <div class="input-money"><input type="number" class="num-input" value="${f.closingCosts}" oninput="update('closingCosts', parseFloat(this.value)||0)"></div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.closingCosts)}" oninput="update('closingCosts', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
             </div>
             <div>
               <label class="field-label">Annual Appreciation</label>
@@ -2548,7 +2571,7 @@
               <div class="fee-toggle-sub">Added to cash-in — reduces cash-on-cash and total ROI. Edit the amount to any figure.</div>
             </div>
             <div class="fee-toggle-amount">
-              <div class="input-money"><input type="number" class="num-input" value="${f.atlasFeeAmount}" oninput="update('atlasFeeAmount', parseFloat(this.value)||0)" ${f.includeAtlasFee ? '' : 'disabled'}></div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.atlasFeeAmount)}" oninput="update('atlasFeeAmount', parseNum(this.value))" onblur="fmtOnBlur(this)" ${f.includeAtlasFee ? '' : 'disabled'}></div>
             </div>
           </label>
 
@@ -2606,12 +2629,12 @@
           <div class="field-grid-2">
             <div>
               <label class="field-label">Purchase Price</label>
-              <div class="input-money"><input type="number" class="num-input" id="f-purchasePrice" placeholder="As-Is value" value="${f.purchasePrice || ''}" oninput="update('purchasePrice', parseFloat(this.value)||0)"></div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-purchasePrice" placeholder="As-Is value" value="${fmtInput(f.purchasePrice || '')}" oninput="update('purchasePrice', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
               <div class="field-hint">As-Is default · push lower for stronger recycle${f.purchasePriceTouched ? '<a href="#" onclick="resetPurchasePrice(); return false;" style="font-size:11px;color:var(--atlas-red);margin-left:6px;">Reset to As-Is</a>' : ''}</div>
             </div>
             <div>
               <label class="field-label">Closing Costs (Purchase)</label>
-              <div class="input-money"><input type="number" class="num-input" value="${f.closingCosts}" oninput="update('closingCosts', parseFloat(this.value)||0)"></div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.closingCosts)}" oninput="update('closingCosts', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
             </div>
             <div>
               <label class="field-label">Annual Appreciation</label>
@@ -2627,7 +2650,7 @@
               <div class="fee-toggle-sub">Deal-sourcing cost. Included in acquisition cash-in — carries through refi.</div>
             </div>
             <div class="fee-toggle-amount">
-              <div class="input-money"><input type="number" class="num-input" value="${f.atlasFeeAmount}" oninput="update('atlasFeeAmount', parseFloat(this.value)||0)" ${f.includeAtlasFee ? '' : 'disabled'}></div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.atlasFeeAmount)}" oninput="update('atlasFeeAmount', parseNum(this.value))" onblur="fmtOnBlur(this)" ${f.includeAtlasFee ? '' : 'disabled'}></div>
             </div>
           </label>
 
@@ -2779,11 +2802,11 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Monthly Rent</label>
-          <div class="input-money"><input type="number" class="num-input js-rent-input" value="${f.monthlyRent || ''}" oninput="update('monthlyRent', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input js-rent-input" value="${fmtInput(f.monthlyRent || '')}" oninput="update('monthlyRent', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Other Monthly Income</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.otherIncome}" oninput="update('otherIncome', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.otherIncome)}" oninput="update('otherIncome', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Laundry, parking, pet fees</div>
         </div>
         <div>
@@ -2807,11 +2830,11 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Property Tax (Annual)</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.propertyTaxAnnual}" oninput="update('propertyTaxAnnual', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.propertyTaxAnnual)}" oninput="update('propertyTaxAnnual', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Insurance (Annual)</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.insuranceAnnual}" oninput="update('insuranceAnnual', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.insuranceAnnual)}" oninput="update('insuranceAnnual', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Vacancy Rate</label>
@@ -2835,15 +2858,15 @@
         </div>
         <div>
           <label class="field-label">HOA (Monthly)</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.hoaMonthly}" oninput="update('hoaMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.hoaMonthly)}" oninput="update('hoaMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Owner-paid Utilities (Monthly)</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.utilitiesMonthly}" oninput="update('utilitiesMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.utilitiesMonthly)}" oninput="update('utilitiesMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Other Monthly</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.otherExpMonthly}" oninput="update('otherExpMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.otherExpMonthly)}" oninput="update('otherExpMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Annual Expense Growth</label>
@@ -3012,11 +3035,11 @@
       const line = rb[k];
       // Compact rate input (always visible, inline with label) — for rehab rates per line
       const rateInput = line.unit === 'total'
-        ? `<div class="rate-input-wrap money"><input type="number" class="rate-input" value="${line.rate}" oninput="updateRehab('${k}', 'rate', parseFloat(this.value)||0)"></div><span class="unit-label">total</span>`
-        : `<input type="number" class="rate-input" value="${line.rate}" oninput="updateRehab('${k}', 'rate', parseFloat(this.value)||0)"><span class="unit-label">$/${line.unit}</span>`;
+        ? `<div class="rate-input-wrap money"><input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', parseNum(this.value))" onblur="fmtOnBlur(this)"></div><span class="unit-label">total</span>`
+        : `<input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', parseNum(this.value))" onblur="fmtOnBlur(this)"><span class="unit-label">$/${line.unit}</span>`;
       return `
         <label class="sidebar-rehab-row ${line.on ? '' : 'inactive'}">
-          <input type="checkbox" ${line.on ? 'checked' : ''} onchange="updateRehab('${k}', 'on', this.checked)">
+          <input type="checkbox" ${line.on ? 'checked' : ''} aria-label="${line.label}" onchange="updateRehab('${k}', 'on', this.checked)">
           <span class="name">
             <span>${line.label}</span>
             <span class="rate-input-wrap${line.unit === 'total' ? ' money' : ''}">${rateInput}</span>
@@ -3193,7 +3216,7 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Note Amount</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfSfAmount}" oninput="update('cfSfAmount', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfSfAmount)}" oninput="update('cfSfAmount', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Principal owed to the seller</div>
         </div>
         <div>
@@ -3221,12 +3244,12 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Current Note Balance</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfSubAmount}" oninput="update('cfSubAmount', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfSubAmount)}" oninput="update('cfSubAmount', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Defaults from the property bar's mortgage balance</div>
         </div>
         <div>
           <label class="field-label">Monthly P&I Payment</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfSubPI}" oninput="update('cfSubPI', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfSubPI)}" oninput="update('cfSubPI', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">The existing payment you take over (P&I only)</div>
         </div>
         <div>
@@ -3260,22 +3283,22 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Property Taxes</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfTaxesMonthly}" oninput="update('cfTaxesMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfTaxesMonthly)}" oninput="update('cfTaxesMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Monthly</div>
         </div>
         <div>
           <label class="field-label">Insurance</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfInsuranceMonthly}" oninput="update('cfInsuranceMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfInsuranceMonthly)}" oninput="update('cfInsuranceMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Monthly · landlord / hazard policy</div>
         </div>
         <div>
           <label class="field-label">HOA / Other Fees</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfHoaMonthly}" oninput="update('cfHoaMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfHoaMonthly)}" oninput="update('cfHoaMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Monthly</div>
         </div>
         <div>
           <label class="field-label">Note Servicing Fee</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfNoteServicing}" oninput="update('cfNoteServicing', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfNoteServicing)}" oninput="update('cfNoteServicing', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Default $25 · servicing company</div>
         </div>
       </div>
@@ -3293,41 +3316,41 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Cash to Seller</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfCashToSeller}" oninput="update('cfCashToSeller', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfCashToSeller)}" oninput="update('cfCashToSeller', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Arrears / Liens</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfArrearsLiens}" oninput="update('cfArrearsLiens', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfArrearsLiens)}" oninput="update('cfArrearsLiens', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Back payments, code liens, etc.</div>
         </div>
         <div>
           <label class="field-label">Cost of Acquisition</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfCostOfAcq}" oninput="update('cfCostOfAcq', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfCostOfAcq)}" oninput="update('cfCostOfAcq', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Atlas fee / assignment · default $15,000</div>
         </div>
         <div>
           <label class="field-label">Closing Costs <span id="cf-closing-tag" style="color:var(--ink-4);font-weight:400;">${f.cfClosingCosts > 0 ? '· custom' : '· auto'}</span></label>
-          <div class="input-money"><input type="number" class="num-input" id="cf-closing-val" value="${Math.round(cr.closing)}" oninput="update('cfClosingCosts', parseFloat(this.value)||0)" onblur="renderCreativeSummary()"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="cf-closing-val" value="${fmtInput(Math.round(cr.closing))}" oninput="update('cfClosingCosts', parseNum(this.value))" onblur="fmtOnBlur(this); renderCreativeSummary()"></div>
           <div class="field-hint" id="cf-closing-hint">${f.cfClosingCosts > 0 ? 'Custom override · clear the field to revert to auto' : 'Auto 1.5% of purchase price · type to override'}</div>
         </div>
         <div>
           <label class="field-label">Renovation</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfRenovation}" oninput="update('cfRenovation', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfRenovation)}" oninput="update('cfRenovation', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Make-ready / turn cost</div>
         </div>
         <div>
           <label class="field-label">Marketing</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfMarketing}" oninput="update('cfMarketing', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfMarketing)}" oninput="update('cfMarketing', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Cost to find buyer/tenant · default $500</div>
         </div>
         <div>
           <label class="field-label">Maintenance Reserve <span id="cf-maint-tag" style="color:var(--ink-4);font-weight:400;">${f.cfMaintOverride > 0 ? '· custom' : '· auto'}</span></label>
-          <div class="input-money"><input type="number" class="num-input" id="cf-maint-val" value="${Math.round(cr.maintenance)}" oninput="update('cfMaintOverride', parseFloat(this.value)||0)" onblur="renderCreativeSummary()"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="cf-maint-val" value="${fmtInput(Math.round(cr.maintenance))}" oninput="update('cfMaintOverride', parseNum(this.value))" onblur="fmtOnBlur(this); renderCreativeSummary()"></div>
           <div class="field-hint" id="cf-maint-hint">${f.cfMaintOverride > 0 ? 'Custom override · clear the field to revert to auto' : `2 × monthly carry (${fmt(cr.monthlyCarry)}/mo) · type to override`}</div>
         </div>
         <div>
           <label class="field-label">Acceleration Insurance <span style="color:var(--ink-4);font-weight:400;">· separate</span></label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfAccelInsurance}" oninput="update('cfAccelInsurance', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfAccelInsurance)}" oninput="update('cfAccelInsurance', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Due-on-sale protection · NOT in cash basis</div>
         </div>
       </div>
@@ -3374,7 +3397,7 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Sale Price to Buyer (OFV)</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfWrapPrice > 0 ? f.cfWrapPrice : (f.asIsValue ? Math.round(f.asIsValue*1.10) : '')}" oninput="update('cfWrapPrice', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfWrapPrice > 0 ? f.cfWrapPrice : (f.asIsValue ? Math.round(f.asIsValue*1.10) : ''))}" oninput="update('cfWrapPrice', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">${f.cfWrapPrice > 0 ? 'Custom · clear to revert to auto' : (f.asIsValue ? `Auto 1.1× As-Is (${fmt(f.asIsValue*1.10)}) · type to override` : 'Auto 1.1× As-Is · set As-Is value above')}</div>
         </div>
         <div>
@@ -3384,7 +3407,7 @@
         </div>
         <div>
           <label class="field-label">Total Buyer Payment</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfWrapBuyerPayment > 0 ? f.cfWrapBuyerPayment : (f.monthlyRent || '')}" oninput="update('cfWrapBuyerPayment', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfWrapBuyerPayment > 0 ? f.cfWrapBuyerPayment : (f.monthlyRent || ''))}" oninput="update('cfWrapBuyerPayment', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">${f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · edit for premium or discount` : "Buyer's all-in monthly payment"}</div>
         </div>
         <div>
@@ -3402,17 +3425,17 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Option / Purchase Price</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoPrice > 0 ? f.cfLoPrice : (f.asIsValue ? Math.round(f.asIsValue*(1+((f.cfLoAppreciation||0)/100)*(f.cfLoTermYears||0))) : '')}" oninput="update('cfLoPrice', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfLoPrice > 0 ? f.cfLoPrice : (f.asIsValue ? Math.round(f.asIsValue*(1+((f.cfLoAppreciation||0)/100)*(f.cfLoTermYears||0))) : ''))}" oninput="update('cfLoPrice', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">${f.cfLoPrice > 0 ? 'Custom · clear to revert to auto' : 'Auto: As-Is + appreciation × term · editable'}</div>
         </div>
         <div>
           <label class="field-label">Option Fee</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoOptionFee}" oninput="update('cfLoOptionFee', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfLoOptionFee)}" oninput="update('cfLoOptionFee', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Default $7,500 · upfront, offsets cash in</div>
         </div>
         <div>
           <label class="field-label">Monthly Lease</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoLeaseAmount > 0 ? f.cfLoLeaseAmount : (f.monthlyRent || '')}" oninput="update('cfLoLeaseAmount', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfLoLeaseAmount > 0 ? f.cfLoLeaseAmount : (f.monthlyRent || ''))}" oninput="update('cfLoLeaseAmount', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">${f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · tenant covers taxes/ins on top` : "Rent the tenant-buyer pays"}</div>
         </div>
         <div>
@@ -3430,12 +3453,12 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Monthly Rent</label>
-          <div class="input-money"><input type="number" class="num-input js-rent-input" value="${f.monthlyRent || ''}" oninput="update('monthlyRent', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input js-rent-input" value="${fmtInput(f.monthlyRent || '')}" oninput="update('monthlyRent', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Market rent · syncs with the Rent Rate field up top</div>
         </div>
         <div>
           <label class="field-label">Other Income</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentOtherIncome}" oninput="update('cfRentOtherIncome', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfRentOtherIncome)}" oninput="update('cfRentOtherIncome', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Parking, laundry, storage, misc.</div>
         </div>
         <div>
@@ -3460,12 +3483,12 @@
         </div>
         <div>
           <label class="field-label">Accounting &amp; Legal</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentAccountingLegal}" oninput="update('cfRentAccountingLegal', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfRentAccountingLegal)}" oninput="update('cfRentAccountingLegal', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Monthly · default $50</div>
         </div>
         <div>
           <label class="field-label">Utilities</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentUtilities}" oninput="update('cfRentUtilities', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfRentUtilities)}" oninput="update('cfRentUtilities', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Gas/electric/water/trash you cover</div>
         </div>
       </div>
@@ -3614,7 +3637,7 @@
   }
   function refreshCreativeEntryFee() {
     const cr = calculate().creative; if (!cr) return;
-    const setVal  = (id, v) => { const e = document.getElementById(id); if (e && e !== document.activeElement) e.value = v; };  // never overwrite the field the user is typing in
+    const setVal  = (id, v) => { const e = document.getElementById(id); if (e && e !== document.activeElement) e.value = fmtInput(v); };  // never overwrite the field the user is typing in
     const setText = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
     const f = state.form;
     const closingCustom = f.cfClosingCosts > 0;
