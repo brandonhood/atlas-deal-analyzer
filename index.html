@@ -3374,6 +3374,13 @@
       <p class="section-sub" style="margin-top:8px;">${subtitle}</p>
       ${inputs}
       <div id="cf-step-summary">${creativeSummaryHTML()}</div>
+      <div style="margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--rule); display: flex; gap: 12px; flex-wrap: wrap;">
+              <button class="btn btn-generate" onclick="generateReport()" style="flex: 1; min-width: 220px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                Generate Deal Report
+              </button>
+              ${saveToGhlButtonHTML()}
+            </div>
     `;
   }
 
@@ -4375,6 +4382,7 @@
     const f = state.form;
     const mode = state.mode;
     const addr = f.address || '';
+    const pct2 = v => Math.round((v || 0) * 100) / 100;   // percentages → 2 decimals
 
     // Build dedup key: sha-ish hash of address+mode+date (so re-saves same day don't dup-ping)
     const dedupSeed = `${addr}|${mode}|${new Date().toISOString().slice(0,10)}`;
@@ -4413,6 +4421,35 @@
         monthly_cash_flow: c.cashFlowMonthly,
         refi_loan: b.refiLoan,
       };
+    } else if (mode === 'creative') {
+      const cr = c.creative;
+      const exitKey = f.cfActiveExit;
+      const ex = exitKey === 'wrap' ? cr.wrap : exitKey === 'lease_option' ? cr.lease : cr.rental;
+      const exitLabel = exitKey === 'wrap' ? 'Wrap' : exitKey === 'lease_option' ? 'Lease Option' : 'Rental';
+      const acqLabel = f.cfAcqType === 'seller_finance' ? 'Seller Finance' : f.cfAcqType === 'hybrid' ? 'Hybrid' : 'SubTo';
+      primaryLabel = `Creative · ${acqLabel} → ${exitLabel} · Net/mo`;
+      primaryValue = ex.monthlyNet;
+      secondary = {
+        acq_type: f.cfAcqType,
+        active_exit: exitKey,
+        entry_fee: Math.round(cr.entryFee),
+        total_debt: Math.round(cr.totalDebt),
+        debt_service_monthly: Math.round(cr.totalDebtService),
+        monthly_carry: Math.round(cr.monthlyCarry),
+      };
+      if (f.cfWrapOn) {
+        secondary.wrap_net_monthly = Math.round(cr.wrap.monthlyNet);
+        secondary.wrap_coc_pct = pct2(cr.wrap.rorWithDP);
+        secondary.wrap_implied_rate_pct = pct2(cr.wrap.rate);
+      }
+      if (f.cfLoOn) {
+        secondary.lease_net_monthly = Math.round(cr.lease.monthlyNet);
+        secondary.lease_coc_pct = pct2(cr.lease.rorWithOF);
+      }
+      if (f.cfRentalOn) {
+        secondary.rental_net_monthly = Math.round(cr.rental.monthlyNet);
+        secondary.rental_coc_pct = pct2(cr.rental.ror);
+      }
     } else {
       primaryLabel = 'Rental · Monthly Cash Flow';
       primaryValue = c.cashFlowMonthly;
@@ -4439,6 +4476,7 @@
         address: f.address,
         beds: f.beds, baths: f.baths, sqft: f.sqft, year_built: f.yearBuilt,
         arv: f.arv, as_is: f.asIsValue, mortgage_balance: f.mortgageBalance,
+        seller_name: f.sellerName || null,
       },
       exit: mode,
       headline: {
@@ -4471,6 +4509,54 @@
           refi_ltv_pct: f.brrrrRefiLtv,
           cash_out_at_refi: Math.round(c.brrrr.cashOutAtRefi),
           cash_left_in_deal: Math.round(c.brrrr.cashLeftInDeal),
+        } : null,
+        creative: c.creative ? {
+          acq_type: f.cfAcqType,
+          active_exit: f.cfActiveExit,
+          exits_on: { wrap: !!f.cfWrapOn, lease_option: !!f.cfLoOn, rental: !!f.cfRentalOn },
+          sf_amount: Math.round(f.cfSfAmount || 0),
+          sf_rate: pct2(f.cfSfRate),
+          sf_months: f.cfSfMonths || 0,
+          sf_balloon: f.cfSfBalloon || 0,
+          sub_amount: Math.round(f.cfSubAmount || 0),
+          sub_pi: Math.round(f.cfSubPI || 0),
+          sub_rate: pct2(f.cfSubRate),
+          cash_to_seller: Math.round(f.cfCashToSeller || 0),
+          arrears_liens: Math.round(f.cfArrearsLiens || 0),
+          cost_of_acq: Math.round(f.cfCostOfAcq || 0),
+          closing: Math.round(c.creative.closing),
+          renovation: Math.round(f.cfRenovation || 0),
+          marketing: Math.round(f.cfMarketing || 0),
+          maintenance_reserve: Math.round(c.creative.maintenance),
+          entry_fee: Math.round(c.creative.entryFee),
+          pl_on: c.creative.plOn,
+          pl_amount: Math.round(c.creative.plAmount),
+          pl_payment: Math.round(c.creative.plPayment),
+          total_debt: Math.round(c.creative.totalDebt),
+          note_payment: Math.round(c.creative.notePayment),
+          total_debt_service: Math.round(c.creative.totalDebtService),
+          wrap: {
+            price: Math.round(c.creative.wrap.price),
+            down: Math.round(c.creative.wrap.down),
+            financed: Math.round(c.creative.wrap.financed),
+            buyer_payment: Math.round(c.creative.wrap.allIn),
+            implied_rate_pct: pct2(c.creative.wrap.rate),
+            net_monthly: Math.round(c.creative.wrap.monthlyNet),
+            coc_after_down_pct: pct2(c.creative.wrap.rorWithDP),
+          },
+          lease: {
+            price: Math.round(c.creative.lease.price),
+            option_fee: Math.round(c.creative.lease.optionFee),
+            lease: Math.round(c.creative.lease.lease),
+            net_monthly: Math.round(c.creative.lease.monthlyNet),
+            coc_after_fee_pct: pct2(c.creative.lease.rorWithOF),
+          },
+          rental: {
+            gross: Math.round(c.creative.rental.gross),
+            expenses: Math.round(c.creative.rental.expenses),
+            net_monthly: Math.round(c.creative.rental.monthlyNet),
+            coc_pct: pct2(c.creative.rental.ror),
+          },
         } : null,
       },
     };
