@@ -3181,7 +3181,7 @@
         </div>
         <div>
           <label class="field-label">Closing Costs <span id="cf-closing-tag" style="color:var(--ink-4);font-weight:400;">${f.cfClosingCosts > 0 ? '· custom' : '· auto'}</span></label>
-          <div class="input-money"><input type="number" class="num-input" id="cf-closing-val" value="${Math.round(cr.closing)}" oninput="update('cfClosingCosts', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="number" class="num-input" id="cf-closing-val" value="${Math.round(cr.closing)}" oninput="update('cfClosingCosts', parseFloat(this.value)||0)" onblur="renderCreativeSummary()"></div>
           <div class="field-hint" id="cf-closing-hint">${f.cfClosingCosts > 0 ? 'Custom override · clear the field to revert to auto' : 'Auto 1.5% of purchase price · type to override'}</div>
         </div>
         <div>
@@ -3196,7 +3196,7 @@
         </div>
         <div>
           <label class="field-label">Maintenance Reserve <span id="cf-maint-tag" style="color:var(--ink-4);font-weight:400;">${f.cfMaintOverride > 0 ? '· custom' : '· auto'}</span></label>
-          <div class="input-money"><input type="number" class="num-input" id="cf-maint-val" value="${Math.round(cr.maintenance)}" oninput="update('cfMaintOverride', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="number" class="num-input" id="cf-maint-val" value="${Math.round(cr.maintenance)}" oninput="update('cfMaintOverride', parseFloat(this.value)||0)" onblur="renderCreativeSummary()"></div>
           <div class="field-hint" id="cf-maint-hint">${f.cfMaintOverride > 0 ? 'Custom override · clear the field to revert to auto' : `2 × monthly carry (${fmt(cr.monthlyCarry)}/mo) · type to override`}</div>
         </div>
         <div>
@@ -3276,7 +3276,7 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Option / Purchase Price</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoPrice > 0 ? f.cfLoPrice : (f.asIsValue ? Math.round(f.asIsValue*(1+((f.cfLoAppreciation||4)/100)*(f.cfLoTermYears||0))) : '')}" oninput="update('cfLoPrice', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoPrice > 0 ? f.cfLoPrice : (f.asIsValue ? Math.round(f.asIsValue*(1+((f.cfLoAppreciation||0)/100)*(f.cfLoTermYears||0))) : '')}" oninput="update('cfLoPrice', parseFloat(this.value)||0)"></div>
           <div class="field-hint">${f.cfLoPrice > 0 ? 'Custom · clear to revert to auto' : 'Auto: As-Is + appreciation × term · editable'}</div>
         </div>
         <div>
@@ -3481,7 +3481,7 @@
   }
   function refreshCreativeEntryFee() {
     const cr = calculate().creative; if (!cr) return;
-    const setVal  = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+    const setVal  = (id, v) => { const e = document.getElementById(id); if (e && e !== document.activeElement) e.value = v; };  // never overwrite the field the user is typing in
     const setText = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
     const f = state.form;
     const closingCustom = f.cfClosingCosts > 0;
