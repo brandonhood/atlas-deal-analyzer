@@ -1929,6 +1929,25 @@
     // Only touches the rehab bucket for the CURRENT mode (per-mode scope)
     getRehab()[lineKey][field] = val;
 
+    // Scope tiers describe ONE scope level and are mutually exclusive — turning one on turns the other three off
+    // (roof / hvac / other are independent add-ons and stack). DOM is patched in place, same as the totals below.
+    const SCOPE_TIERS = ['low_mid_cosmetic', 'mid_high_cosmetic', 'low_mid_gut', 'mid_high_gut'];
+    if (field === 'on' && val === true && SCOPE_TIERS.includes(lineKey)) {
+      const rb = getRehab();
+      SCOPE_TIERS.filter(k => k !== lineKey).forEach(k => {
+        if (!rb[k]) return;
+        rb[k].on = false;
+        document.querySelectorAll(`[data-rehab-sub="${k}"]`).forEach(subEl => {
+          const row = subEl.closest('.sidebar-rehab-row, .rehab-row');
+          if (!row) return;
+          const cb = row.querySelector('input[type="checkbox"]');
+          if (cb) cb.checked = false;
+          row.classList.add('inactive');
+          subEl.textContent = fmt(lineSubtotal(k));
+        });
+      });
+    }
+
     // Update rehab totals and per-line subtotals in place (so the user's focus/typing isn't destroyed)
     const tot = document.querySelector('.rehab-total');
     if (tot) tot.textContent = fmt(calcRehab());
@@ -3013,16 +3032,41 @@
     // Show current mode first
     const rows = currentMode === 'wholesale' ? wsRow + novRow : novRow + wsRow;
 
+    // Transparency: the two MAOs use separate rehab buckets — flag when the scopes differ and offer a one-click copy
+    const otherMode = currentMode === 'wholesale' ? 'novation' : 'wholesale';
+    const currentModeLabel = currentMode === 'wholesale' ? 'Wholesale' : 'Novation';
+    const otherModeLabel = otherMode === 'wholesale' ? 'Wholesale' : 'Novation';
+    const scopeNote = c.wsRepair !== c.novRepair ? `
+        <div class="compare-scope-note" style="font-size: 10px; color: #B8BCC4;">
+          Rehab scopes differ · Wholesale ${fmt(c.wsRepair)} vs Novation ${fmt(c.novRepair)}
+          <button type="button" onclick="mirrorRehab('${currentMode}', '${otherMode}')" style="background: none; border: none; padding: 0; color: var(--atlas-gold); font: inherit; text-decoration: underline; cursor: pointer;">Copy ${currentModeLabel} scope to ${otherModeLabel}</button>
+        </div>` : '';
+
     return `
       <div class="compare-panel">
         <div class="compare-title">Exit Comparison</div>
         ${rows}
+        ${scopeNote}
         <div class="compare-delta">
           <span>${deltaDir}</span>
           <strong>${deltaLabel}</strong>
         </div>
       </div>
     `;
+  }
+
+  // Copy the rehab scope (rate + on for every line) from one exit strategy's bucket into another's
+  function mirrorRehab(from, to) {
+    const src = state.form.rehab[from];
+    const dst = state.form.rehab[to];
+    if (!src || !dst) return;
+    Object.keys(src).forEach(k => {
+      if (!dst[k]) { dst[k] = { ...src[k] }; return; }
+      dst[k].rate = src[k].rate;
+      dst[k].on = src[k].on;
+    });
+    renderSidebar();
+    updateOfferCallout();
   }
 
   // ============ SIDEBAR ============
