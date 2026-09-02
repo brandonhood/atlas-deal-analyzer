@@ -681,6 +681,8 @@
   }
   .equity-callout.good .val { color: var(--good); }
   .equity-callout .sub { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+  .warn-chip { display:flex; align-items:flex-start; gap:8px; margin-top:12px; padding:9px 12px; background: var(--atlas-gold-soft); border:1px solid var(--atlas-cream-dark); border-left:3px solid var(--atlas-gold); border-radius:6px; font-size:12px; color: var(--atlas-gold-dark); line-height:1.4; }
+  .warn-chip.danger { background: var(--atlas-red-soft); border-color: var(--atlas-red-line); border-left-color: var(--atlas-red); color: var(--atlas-red-dark); }
 
   /* ============ OFFER CALLOUT (wholesale/novation) ============ */
   .offer-callout {
@@ -2883,14 +2885,43 @@
             <span class="row-val">${fmt(Math.max(0, b.cashLeftInDeal))}</span>
           </div>
         </div>
+        ${b.cashOutAtRefi < 0 ? warnChip('Refi loan does not cover the acquisition loan payoff and closing — short by ' + fmt(-b.cashOutAtRefi) + '.', true) : ''}
       </div>
     `;
+  }
+
+  // Inline underwriting warning chip — returns '' when there is nothing to say
+  function warnChip(text, danger) {
+    if (!text) return '';
+    return `<div class="warn-chip${danger ? ' danger' : ''}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg><span>${text}</span></div>`;
   }
 
   function offerCalloutHTML(mode, c) {
     const f = state.form;
     const mao = mode === 'wholesale' ? c.wholesaleMAO : c.novationMAO;
     const mortgage = f.mortgageBalance || 0;
+    // The driving value (ARV for wholesale, As-Is for novation) — no value, no price
+    const hasValue = mode === 'wholesale' ? f.arv > 0 : f.asIsValue > 0;
+    const eyebrow = `<div class="eyebrow">${mode === 'wholesale' ? 'Wholesale' : 'Novation'} Max Allowable Offer</div>`;
+    // Inline underwriting warnings — rendered under the callout and rebuilt with it
+    const rb = getRehab(mode) || {};
+    const sqftLineOn = Object.keys(rb).some(k => rb[k].on && rb[k].unit === 'sqft');
+    const warnings = [
+      (hasValue && !(f.sqft > 0) && sqftLineOn) ? warnChip('Square feet is blank — $/sf rehab lines are counting as $0, so this MAO is overstated.') : '',
+      (mortgage > 0 && mao > 0 && mao < mortgage) ? warnChip('MAO is ' + fmt(mortgage - mao) + ' below the mortgage payoff — the seller cannot close at this price without a short sale or bringing cash.', true) : ''
+    ].join('');
+    if (!hasValue) {
+      return `
+      <div id="offer-block">
+      <div class="offer-callout">
+        ${eyebrow}
+        <div class="mao-val" id="mao-val-live" style="font-size:22px;color:#B8BCC4;font-weight:600;">${mode === 'wholesale' ? 'Enter ARV to price this deal' : 'Enter As-Is Value to price this deal'}</div>
+        <div class="mao-sub">MAO, floor and ceiling appear once the value is set.</div>
+      </div>
+      <div id="offer-warnings">${warnings}</div>
+      </div>
+    `;
+    }
     const netAtMao = Math.max(0, mao - mortgage);
     const netAtFloor = Math.max(0, (mao - 5000) - mortgage);
     const netAtCeiling = Math.max(0, (mao + 5000) - mortgage);
@@ -2900,8 +2931,9 @@
       ? `Seller nets <strong>${fmt(netAtMao)}</strong> at table after ${fmt(mortgage)} mortgage payoff`
       : 'No mortgage on file · MAO equals net to seller';
     return `
+      <div id="offer-block">
       <div class="offer-callout">
-        <div class="eyebrow">${mode === 'wholesale' ? 'Wholesale' : 'Novation'} Max Allowable Offer</div>
+        ${eyebrow}
         <div class="mao-val" id="mao-val-live">${fmt(mao)}</div>
         <div class="mao-sub">${mode === 'wholesale' ? 'Cash offer to seller · flip buyer exit' : 'Net to seller · retail listing exit'}</div>
         <div class="net-seller-sub" id="net-seller-sub">${netSubLabel}</div>
@@ -2922,6 +2954,8 @@
             ${hasMortgage ? `<div class="offer-range-net" id="offer-high-net">Nets ${fmt(netAtCeiling)}</div>` : ''}
           </div>
         </div>
+      </div>
+      <div id="offer-warnings">${warnings}</div>
       </div>
     `;
   }
@@ -2956,13 +2990,13 @@
   function updateOfferCallout() {
     const c = calculate();
     const mode = state.mode;
-    // Rebuild the whole callout so the "Net to Seller" tier lines can appear/disappear
-    // based on whether mortgage > 0. No input focus inside the callout, so this is safe.
-    const callout = document.querySelector('.offer-callout');
-    if (callout) {
+    // Rebuild the whole callout + warnings block so the "Net to Seller" tier lines, the empty
+    // state and the warning chips can appear/disappear. No input focus inside it, so this is safe.
+    const block = document.getElementById('offer-block');
+    if (block) {
       const temp = document.createElement('div');
       temp.innerHTML = offerCalloutHTML(mode, c).trim();
-      callout.replaceWith(temp.firstChild);
+      block.replaceWith(temp.firstChild);
     }
     const math = document.getElementById('offer-math');
     if (math) math.outerHTML = offerMathHTML(mode, c).trim();
@@ -3076,6 +3110,7 @@
     const b = c.brrrr;
     if (!b) return rentalStatsCardHTML(c);
     const fullyRecycled = b.cashLeftInDeal <= 0;
+    const lowDscr = c.monthlyPI > 0 && c.dscr < 1.2;
     return `
       <div class="preview-card">
         <div class="preview-head">
@@ -3091,14 +3126,19 @@
             <div class="preview-stat"><span class="preview-stat-label">Post-Refi CoC</span><span class="preview-stat-val ${c.cashOnCash >= 8 ? 'good' : c.cashOnCash < 4 ? 'bad' : ''}">${fullyRecycled ? '∞' : fmtPct(c.cashOnCash)}</span></div>
             <div class="preview-stat"><span class="preview-stat-label">Cap Rate (on ARV)</span><span class="preview-stat-val">${fmtPct(c.capRate)}</span></div>
             <div class="preview-stat"><span class="preview-stat-label">Monthly Cash Flow</span><span class="preview-stat-val ${c.cashFlowMonthly > 0 ? 'good' : 'bad'}">${fmt(c.cashFlowMonthly)}</span></div>
+            <div class="preview-stat"><span class="preview-stat-label">DSCR (post-refi)</span><span class="preview-stat-val ${lowDscr ? 'bad' : ''}">${c.dscr.toFixed(2)}x</span></div>
           </div>
         </div>
+        ${b.cashOutAtRefi < 0 ? warnChip('Refi loan does not cover the acquisition loan payoff and closing — short by ' + fmt(-b.cashOutAtRefi) + '.', true) : ''}
+        ${lowDscr ? warnChip('DSCR below 1.20 — most DSCR lenders will not fund this loan as structured.', true) : ''}
       </div>
     `;
   }
 
   function rentalStatsCardHTML(c) {
     const f = state.form;
+    const hasRent = f.monthlyRent > 0;
+    const lowDscr = c.monthlyPI > 0 && c.dscr < 1.2;
     return `
       <div class="preview-card">
         <div class="preview-head">
@@ -3109,6 +3149,7 @@
           <div class="preview-stat"><span class="preview-stat-label">Monthly Cash Flow</span><span class="preview-stat-val ${c.cashFlowMonthly > 0 ? 'good' : 'bad'}">${fmt(c.cashFlowMonthly)}</span></div>
           <div class="preview-stat"><span class="preview-stat-label">Cash-on-Cash</span><span class="preview-stat-val">${fmtPct(c.cashOnCash)}</span></div>
           <div class="preview-stat"><span class="preview-stat-label">Cap Rate</span><span class="preview-stat-val">${fmtPct(c.capRate)}</span></div>
+          <div class="preview-stat"><span class="preview-stat-label">DSCR</span><span class="preview-stat-val ${lowDscr ? 'bad' : ''}">${c.dscr.toFixed(2)}x</span></div>
           <div class="preview-stat"><span class="preview-stat-label">Instant Equity</span><span class="preview-stat-val ${c.instantEquity > 0 ? 'good' : 'bad'}">${fmt(c.instantEquity)}</span></div>
           <div class="preview-divider">
             <div class="preview-stat"><span class="preview-stat-label">NOI (Annual)</span><span class="preview-stat-val">${fmt(c.noiAnnual)}</span></div>
@@ -3117,6 +3158,8 @@
             ${f.includeAtlasFee ? `<div class="preview-stat"><span class="preview-stat-label" style="font-style:italic;font-size:9px;">* incl. ${fmt(f.atlasFeeAmount)} Atlas fee</span><span></span></div>` : ''}
           </div>
         </div>
+        ${!hasRent ? warnChip('Enter market rent to grade this deal.') : ''}
+        ${hasRent && lowDscr ? warnChip('DSCR below 1.20 — most DSCR lenders will not fund this loan as structured.', true) : ''}
       </div>
     `;
   }
