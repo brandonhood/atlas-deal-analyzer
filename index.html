@@ -1688,6 +1688,7 @@
 
       // Purchase (rental)
       purchasePrice: 150000,
+      purchasePriceTouched: false,
       closingCosts: 3500,
 
       // Rehab line items — SEPARATE PER EXIT STRATEGY
@@ -1854,14 +1855,14 @@
             state.form[key] = parseFloat(raw) || 0;
           }
           if (key === 'asIsValue' && (state.mode === 'rental' || state.mode === 'brrrr')) {
-            state.form.purchasePrice = state.form.asIsValue;
+            syncPurchasePriceFromAsIs();
           }
           renderSidebar();
           if (key === 'sqft') renderStep();
           if (key === 'address') renderStep();
           if (key === 'monthlyRent') syncRentInputs(state.form.monthlyRent, el);
           if (state.mode === 'creative' && (key === 'monthlyRent' || key === 'asIsValue')) renderStep();
-          if (state.mode === 'rental' && state.step === 1) updateRentalEquityCallout();
+          if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
           if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
         });
     });
@@ -1869,9 +1870,10 @@
 
   function update(key, val) {
     state.form[key] = val;
+    if (key === 'purchasePrice') state.form.purchasePriceTouched = true;
     renderSidebar();
     // Step-level live updates
-    if (state.mode === 'rental' && state.step === 1) updateRentalEquityCallout();
+    if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
     if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
     // Full re-renders for inputs that change displayed structure
     if (key === 'allCash') renderStep();
@@ -1880,6 +1882,25 @@
     if (key === 'monthlyRent') syncRentInputs(val, document.activeElement);
     if (state.mode === 'creative') renderCreativeSummary();
     if (key === 'cfAcqType' || key === 'cfActiveExit' || key === 'cfPlOn' || key === 'cfPlInterestOnly' || key === 'cfSfInterestOnly') renderStep();
+  }
+
+  // Purchase Price mirrors As-Is until the user types a negotiated price (purchasePriceTouched).
+  // Never assigns null/0 — a blank As-Is leaves the existing purchasePrice alone.
+  function syncPurchasePriceFromAsIs() {
+    const f = state.form;
+    if (f.purchasePriceTouched) return;
+    if (typeof f.asIsValue !== 'number' || !(f.asIsValue > 0)) return;
+    f.purchasePrice = f.asIsValue;
+    const ppEl = document.getElementById('f-purchasePrice');
+    if (ppEl && ppEl !== document.activeElement) ppEl.value = f.purchasePrice;
+  }
+
+  function resetPurchasePrice() {
+    state.form.purchasePriceTouched = false;
+    syncPurchasePriceFromAsIs();
+    renderStep();
+    renderSidebar();
+    if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
   }
 
   function getRehab(mode) {
@@ -1908,8 +1929,8 @@
       const cmp = document.getElementById('compare-panel-container');
       if (cmp) cmp.innerHTML = comparePanelHTML(state.mode, calculate());
     }
-    // For Rental: rehab lives in main column; sidebar needs stats refresh
-    if (state.mode === 'rental') {
+    // For Rental/BRRRR: rehab lives in main column; sidebar needs stats refresh
+    if (state.mode === 'rental' || state.mode === 'brrrr') {
       renderSidebar();
       if (state.step === 1) updateRentalEquityCallout();
     }
@@ -1920,7 +1941,7 @@
     state.step = 1;
     // BRRRR and Rental both use purchasePrice; sync from As-Is as the starting default
     if (mode === 'rental' || mode === 'brrrr') {
-      state.form.purchasePrice = state.form.asIsValue;
+      syncPurchasePriceFromAsIs();
     }
     if (mode === 'creative' && (!state.form.cfSubAmount || state.form.cfSubAmount === 0) && state.form.mortgageBalance) {
       state.form.cfSubAmount = state.form.mortgageBalance;  // SubTo balance defaults from GHL mortgage_balance
@@ -2467,8 +2488,8 @@
           <div class="field-grid-2">
             <div>
               <label class="field-label">Purchase Price</label>
-              <div class="input-money"><input type="number" class="num-input" value="${f.purchasePrice}" oninput="update('purchasePrice', parseFloat(this.value)||0)"></div>
-              <div class="field-hint">As-Is default · edit for negotiated price</div>
+              <div class="input-money"><input type="number" class="num-input" id="f-purchasePrice" placeholder="As-Is value" value="${f.purchasePrice || ''}" oninput="update('purchasePrice', parseFloat(this.value)||0)"></div>
+              <div class="field-hint">As-Is default · edit for negotiated price${f.purchasePriceTouched ? '<a href="#" onclick="resetPurchasePrice(); return false;" style="font-size:11px;color:var(--atlas-red);margin-left:6px;">Reset to As-Is</a>' : ''}</div>
             </div>
             <div>
               <label class="field-label">Closing Costs</label>
@@ -2546,8 +2567,8 @@
           <div class="field-grid-2">
             <div>
               <label class="field-label">Purchase Price</label>
-              <div class="input-money"><input type="number" class="num-input" value="${f.purchasePrice}" oninput="update('purchasePrice', parseFloat(this.value)||0)"></div>
-              <div class="field-hint">As-Is default · push lower for stronger recycle</div>
+              <div class="input-money"><input type="number" class="num-input" id="f-purchasePrice" placeholder="As-Is value" value="${f.purchasePrice || ''}" oninput="update('purchasePrice', parseFloat(this.value)||0)"></div>
+              <div class="field-hint">As-Is default · push lower for stronger recycle${f.purchasePriceTouched ? '<a href="#" onclick="resetPurchasePrice(); return false;" style="font-size:11px;color:var(--atlas-red);margin-left:6px;">Reset to As-Is</a>' : ''}</div>
             </div>
             <div>
               <label class="field-label">Closing Costs (Purchase)</label>
