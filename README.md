@@ -4,31 +4,31 @@ Single-file deal analyzer (`index.html`) for the Atlas Home Buyers acquisitions 
 
 ## GHL deep-link parameters
 
-The extension builds `https://analyzer.atlashomebuyers.com/?<params>`. Every key is optional; unknown keys are ignored and blank or non-numeric values leave the analyzer field empty (placeholder shown). Numeric values must be plain numbers (e.g. `arv=250000`, `rate=6.5`). The analyzer applies `parseFloat` as-is: `250,000` is read as 250 and `$180,000` is dropped (field left blank). The extension extracts the leading number (dropping `$`, `,` and `%` and expanding `150k` to 150000) before building the link, so links it generates are always clean. The page always opens in Wholesale mode.
+The extension builds `https://analyzer.atlashomebuyers.com/?<params>`. Every key is optional; unknown keys are ignored and blank or non-numeric values leave the analyzer field empty (placeholder shown). Numeric values must be plain numbers (e.g. `arv=250000`, `rate=6.5`). The analyzer applies `parseFloat` as-is: `250,000` is read as 250 and `$180,000` is dropped (field left blank). The extension extracts the leading number (dropping `$`, `,` and `%` and expanding `150k` to 150000) before building the link, so links it generates are always clean. The page always opens in Wholesale mode. The **Sent by extension** column marks the keys the current CRM Buttons extension actually puts in the link; `asking`, `purchase` and `monthly_rent` are legacy keys the analyzer still accepts (hand-built links, older extension builds) but the extension no longer sends.
 
-| Query key | Analyzer field(s) | Notes |
-| --- | --- | --- |
-| `address` | `address` (property bar) | Full street address. |
-| `contact_name` | `sellerName`, GHL banner | Seller / contact name. |
-| `contact_id` | GHL banner, Slack payload `ghl.contact_id` | GHL contact id, echoed back in the Slack payload. |
-| `beds` | `beds` | Number. |
-| `baths` | `baths` | Number (decimals allowed). |
-| `sqft` | `sqft` | Square feet; drives the $/sf rehab lines. |
-| `year` | `yearBuilt` | Integer year. |
-| `arv` | `arv` | After Repair Value. |
-| `as_is` | `asIsValue` | As-Is value; Rental/BRRRR purchase price defaults from it. |
-| `mortgage` | `mortgageBalance`, `cfSubAmount` | Mortgage balance; also seeds the Creative SubTo balance. |
-| `arrears` | `cfArrearsLiens` | Arrears / liens. Part of the seller payoff (see below). |
-| `bottom_dollar` | `sellerNet` | **Seller Bottom Dollar** — the seller's required *net* proceeds after the mortgage and liens are paid off. Not a purchase price. |
-| `asking` | `sellerNet` | Legacy alias for `bottom_dollar` (ignored when `bottom_dollar` is also present). |
-| `purchase` | `purchasePrice` (+ `purchasePriceTouched`) | Negotiated price; Rental/BRRRR keep it instead of deriving from As-Is. |
-| `monthly_rent` | `monthlyRent` | Market rent per month. |
-| `market_rent` | `monthlyRent` | Same field as `monthly_rent`. |
-| `rate` | `cfSubRate` | Existing mortgage interest rate (%) for Creative SubTo. |
-| `monthly_pi` | `cfSubPI` | Existing mortgage principal + interest per month. |
-| `taxes` | `cfTaxesMonthly`, `propertyTaxAnnual` (= monthly × 12) | Monthly property taxes. |
-| `insurance` | `cfInsuranceMonthly`, `insuranceAnnual` (= monthly × 12) | Monthly insurance. |
-| `hoa` | `cfHoaMonthly`, `hoaMonthly` | Monthly HOA dues. |
+| Query key | Analyzer field(s) | Sent by extension | Notes |
+| --- | --- | --- | --- |
+| `address` | `address` (property bar) | yes | Full street address. |
+| `contact_name` | `sellerName`, GHL banner | yes | Seller / contact name. |
+| `contact_id` | GHL banner, Slack payload `ghl.contact_id` | yes | GHL contact id, echoed back in the Slack payload. |
+| `beds` | `beds` | yes | Number. |
+| `baths` | `baths` | yes | Number (decimals allowed). |
+| `sqft` | `sqft` | yes | Square feet; drives the $/sf rehab lines. |
+| `year` | `yearBuilt` | yes | Integer year. |
+| `arv` | `arv` | yes | After Repair Value. |
+| `as_is` | `asIsValue` | yes | As-Is value; Rental/BRRRR purchase price defaults from it. |
+| `mortgage` | `mortgageBalance`, `cfSubAmount` | yes | Mortgage balance; also seeds the Creative SubTo balance. |
+| `arrears` | `cfArrearsLiens` | yes | Arrears / liens. Part of the seller payoff (see below). |
+| `bottom_dollar` | `sellerNet` | yes | **Seller Bottom Dollar** — the seller's required *net* proceeds after the mortgage and liens are paid off. Not a purchase price. |
+| `asking` | `sellerNet` | no — legacy | Legacy alias for `bottom_dollar` (ignored when `bottom_dollar` is also present). |
+| `purchase` | `purchasePrice` (+ `purchasePriceTouched`) | no — legacy | Negotiated price; Rental/BRRRR keep it instead of deriving from As-Is. |
+| `monthly_rent` | `monthlyRent` | no — legacy | Market rent per month. |
+| `market_rent` | `monthlyRent` | yes | Same field as `monthly_rent`. |
+| `rate` | `cfSubRate` | yes | Existing mortgage interest rate (%) for Creative SubTo. |
+| `monthly_pi` | `cfSubPI` | yes | Existing mortgage principal + interest per month. |
+| `taxes` | `cfTaxesMonthly`, `propertyTaxAnnual` (= monthly × 12) | yes | Monthly property taxes. |
+| `insurance` | `cfInsuranceMonthly`, `insuranceAnnual` (= monthly × 12) | yes | Monthly insurance. |
+| `hoa` | `cfHoaMonthly`, `hoaMonthly` | yes | Monthly HOA dues. |
 
 ### Seller payoff and bottom dollar
 
