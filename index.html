@@ -113,7 +113,11 @@
   }
   @media (max-width: 640px) { .masthead-meta { display: none; } }
 
-  .report-actions { display: flex; gap: 8px; }
+  .report-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  @media (max-width: 640px) {
+    .masthead-inner { grid-template-columns: auto 1fr; padding: 14px 20px; gap: 16px; }
+    .report-actions { grid-column: 1 / -1; justify-content: flex-start; gap: 6px; }
+  }
   .btn-print, .btn-edit {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 8px 14px;
@@ -129,6 +133,7 @@
   .btn-print:hover { border-color: var(--atlas-red); color: var(--atlas-red); }
   .btn-edit { background: var(--atlas-red); border-color: var(--atlas-red); color: white; }
   .btn-edit:hover { background: var(--atlas-red-dark); border-color: var(--atlas-red-dark); }
+  @media (max-width: 640px) { .btn-print, .btn-edit { padding: 7px 10px; font-size: 11px; } }
 
   /* ============ PAGE ============ */
   .page {
@@ -138,7 +143,7 @@
   }
   @media (max-width: 640px) { .page { padding: 24px 20px 48px; } }
 
-  .hero { margin-bottom: 28px; }
+  .hero { margin-bottom: 18px; }
   .hero .eyebrow {
     font-family: var(--accent);
     font-size: 10px; font-weight: 700;
@@ -149,18 +154,19 @@
   }
   .hero h1 {
     font-family: var(--display);
-    font-size: clamp(28px, 4vw, 40px);
+    font-size: clamp(22px, 2.6vw, 30px);
     font-weight: 800; line-height: 1.1;
     letter-spacing: -0.02em;
     color: var(--ink);
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
   .hero h1 .muted { color: var(--ink-3); font-weight: 300; }
   .hero p {
     color: var(--ink-2);
     max-width: 640px;
-    font-size: 15px;
+    font-size: 14px;
   }
+  @media (max-width: 640px) { .hero p { display: none; } }
 
   /* ============ PROPERTY BAR (always at top) ============ */
   .property-bar {
@@ -190,6 +196,17 @@
     color: var(--ink-3);
     font-style: italic;
   }
+  .link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: 12px;
+    color: var(--atlas-red);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+  .property-bar-actions { margin-left: auto; white-space: nowrap; font-size: 12px; }
 
   /* ============ MODE SELECTOR ============ */
   .mode-selector {
@@ -257,9 +274,11 @@
   }
   .mode-btn.active .mode-btn-sub { color: var(--atlas-gold-dark); }
   @media (max-width: 640px) {
-    .mode-btn-group { grid-template-columns: repeat(2, 1fr); }
+    .mode-btn-group { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); align-items: stretch; }
     .mode-btn { padding: 10px 12px; text-align: center; align-items: center; }
     .mode-btn-sub { display: none; }
+    .mode-btn-label { font-size: 13px; }
+    .mode-btn { min-height: 44px; justify-content: center; }
   }
 
   /* ============ STEPPER ============ */
@@ -383,7 +402,7 @@
     font-style: italic;
   }
 
-  input.text-input, input.num-input {
+  input.text-input, input.num-input, select.text-input {
     width: 100%;
     padding: 10px 12px;
     background: var(--surface);
@@ -394,11 +413,23 @@
     font-size: 14px;
     transition: all 0.15s;
   }
-  input.text-input:focus, input.num-input:focus {
+  input.text-input:focus, input.num-input:focus, select.text-input:focus {
     outline: none;
     border-color: var(--atlas-red);
     box-shadow: 0 0 0 3px var(--atlas-red-soft);
   }
+  /* Selects share the input look; replace the native arrow with a small chevron */
+  select.text-input {
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    padding-right: 36px;
+    line-height: normal;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  select.text-input:hover { border-color: var(--atlas-red); }
 
   .input-money, .input-pct { position: relative; }
   .input-money input { padding-left: 26px; }
@@ -680,6 +711,8 @@
   }
   .equity-callout.good .val { color: var(--good); }
   .equity-callout .sub { font-size: 12px; color: var(--ink-3); margin-top: 6px; }
+  .warn-chip { display:flex; align-items:flex-start; gap:8px; margin-top:12px; padding:9px 12px; background: var(--atlas-gold-soft); border:1px solid var(--atlas-cream-dark); border-left:3px solid var(--atlas-gold); border-radius:6px; font-size:12px; color: var(--atlas-gold-dark); line-height:1.4; }
+  .warn-chip.danger { background: var(--atlas-red-soft); border-color: var(--atlas-red-line); border-left-color: var(--atlas-red); color: var(--atlas-red-dark); }
 
   /* ============ OFFER CALLOUT (wholesale/novation) ============ */
   .offer-callout {
@@ -918,6 +951,7 @@
     font-size: 22px; font-weight: 800;
     color: white;
     letter-spacing: -0.03em;
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
   }
   .grade-badge.lg {
     width: 96px; height: 96px;
@@ -1083,6 +1117,7 @@
     gap: 20px;
   }
   @media (max-width: 640px) { .report-container { padding: 24px 20px 48px; } }
+  #rpt-mode-sections { display: flex; flex-direction: column; gap: 20px; }
 
   .property-card {
     background: var(--surface);
@@ -1106,6 +1141,8 @@
     color: var(--ink);
     line-height: 1.1;
   }
+  .property-seller { margin-top: 6px; font-size: 13px; color: var(--ink-3); }
+  .property-seller strong { color: var(--ink); font-weight: 600; }
   .property-specs {
     display: flex;
     gap: 16px;
@@ -1124,6 +1161,22 @@
     color: var(--ink-3);
     margin-top: 10px;
     text-align: center;
+  }
+  /* Report header: badge + label + date stacked and centered on a common axis */
+  .grade-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .grade-column .grade-label { margin-top: 8px; white-space: nowrap; }
+  .grade-column .grade-date {
+    margin-top: 3px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--ink-4);
   }
 
   .key-metrics {
@@ -1371,6 +1424,23 @@
     border: 1px solid var(--rule);
     font-variant-numeric: tabular-nums;
   }
+  .ghl-banner button {
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-family: var(--display);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .ghl-banner button:hover { border-color: var(--atlas-red); color: var(--atlas-red); }
+  @media (max-width: 640px) {
+    .ghl-banner { flex-wrap: wrap; }
+    .ghl-banner-text { flex: 1 1 100%; }
+    .ghl-banner button { min-height: 36px; padding: 6px 12px; }
+  }
 
   .btn-save-ghl {
     background: var(--atlas-charcoal);
@@ -1454,6 +1524,9 @@
     .offer-callout .mao-val, .offer-callout .offer-range-val { color: var(--ink) !important; }
     .offer-callout .mao-val { color: var(--atlas-red) !important; }
     .offer-callout .mao-sub, .offer-callout .offer-range-label { color: var(--ink-3) !important; }
+    .grade-badge, .key-metric-val, .stat-val, .subsection-title, .cf-cmp-col, .equity-callout, .warn-chip { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .ghl-banner, #toast, .toast, .mobile-bar { display: none !important; }
+    @page { margin: 12mm; }
   }
 
   /* ===================== CREATIVE FINANCE ===================== */
@@ -1484,6 +1557,20 @@
     .cf-seg-btn { align-items: center; text-align: center; }
     .cf-cmp { grid-template-columns: 1fr; }
   }
+
+  /* ============ MOBILE RESULTS BAR ============ */
+  .mobile-bar { display: none; }
+  @media (max-width: 900px) {
+    .mobile-bar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 900; align-items: center; gap: 12px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: var(--atlas-charcoal); color: white; box-shadow: 0 -6px 20px rgba(15,20,25,.25); }
+    .mobile-bar[hidden] { display: none; }
+    .mobile-bar-main { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .mobile-bar-label { font-family: var(--accent); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #B8BCC4; }
+    .mobile-bar-val { font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mobile-bar-badge { font-family: var(--display); font-weight: 800; font-size: 14px; padding: 4px 10px; border-radius: 6px; background: var(--atlas-gold); color: white; }
+    .mobile-bar-btn { background: var(--atlas-red); color: white; border: none; border-radius: 8px; padding: 10px 12px; min-height: 44px; font-family: var(--display); font-weight: 700; font-size: 12px; cursor: pointer; }
+    .page { padding-bottom: 96px; }
+    .toast { bottom: calc(84px + env(safe-area-inset-bottom)); left: 16px; right: 16px; max-width: none; }
+  }
 </style>
 </head>
 <body>
@@ -1494,10 +1581,14 @@
     <img class="logo-mark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAN8AAAEACAYAAAAz5qNiAAB5TklEQVR42u2deXycVfX/3+feyWQtpS1tMpNAERCkiPgVcMEFFBRBRVFbXEHWsiMgLj/92la/7oAgawHBfSkq4r6h4IKogCJQWQrSkswkLbSUNuvMc8/vj+c+ydNhJplJn7QJ5Hm98ioks97nfu4553M+5xxh+kr6EsD4fwGKFR5nWltbd0qlUm1BELSLSFZE2lW1TUTmqupsEZmpqi0i0qiqaRFJqaoBEBEHBKo6BAwAvSLyNLABWKeq3SKSA7pUtauuri63Zs2aJ4BChc9j/WdWwPl/p68J3ijT19avYQQ453+2uObOnduWSqX2MMbsrap7A3sC84E2YEcRSY31JqrlsSAy9i1UVaeqG0WkB1ijqg+LyH9EZCXwcFdXV2e5wyH2nXQajNPgm4zWbQvLNmfOnBkNDQ0LnHMvFZGXAfsCu4lISxwoEZj8v1pmg0uN90hL/o0fDBIBtfQzOOf6ReS/qnqviPxdVf82ODh47/r1658uYxmZtorT4NuegAMIYr+vy2QyLxKRg1X1EBHZ37uQwxs8BrCgDCi21T3QMiA3gImD0n/ebuBu4NYgCG6bM2fOv1auXDk0DcRp8G13wHV0dMwOguDVInKkiBwC7FmyeeNAM9sYZOMFZeQuW/FfRkRwzgGsAm5V1V9Ya2/r7OxcPw3EafBN5LrYuEs5f/78HYvF4qGq+nbgUBFpFZG4ZSuWIVu2FhSUWCpN4HtJmf8u994RmFKRZfTftQf4vYj8MJVK3bJ69eqnYs9L+UNnGoTT4Kv5ioAzbLXa29sPVtV3A28yxmRj1i0iV0zMOiZheeJkx7A7WA2xUgtpE3OF4xarkjscfVcRERt9FudcDvi5iHy3q6vrtrj1LPOdpq9p8JW9ttgs2Wx2Z+BdwHtFZL/YqV/qSo4HaPHNbv2GfgYRoqqBqj4FrAeeBJ4A1ovIU6r6NLAZ6DfGDDrnij71IKpqRaQOaACaVHUHEdlRVXcEdgLmADuJyI5AU2m8F/s3smCl1nx4nSIg+sf/S1W/JSLfj7GnpYfZ9DUNvi1AN7wxstnsK1T1ZBF5hzFmh5L4zY5jveJgK0tuOOfWi8hjqroKeEhEVjnnHrPW5qy1T6xZs+bppDdvJpNpMsbMds61AjuLyO6E6Y89VXV3TxjFgRVfhzgYh9dGwgvn3FPAD0Tkuq6urr+VxM7TIJwG3zNA9xbgTBF5Q4xkKI7TpRx20fymjMdLG4EHVPVu4C5V/bcx5tFcLvdklcTP1twvrcYV7OjoaHTO7eLzkfuLyIHAvmUY3LjbHU/Op4wx0WN+KSKXd3V1/aLS2k+D77kFusgSSTabXQSc6/Nx0enuxrHRo404bAF8TLQJ+KeI/DEIgr8EQfCvdevWdY/y2aQEKEkRLdUSL2VFAnPmzJmRSqX2NsYcJCIHAy+NwFiBcIrWIlqH240xF3d1df1w2hI+98BnYpuL9vb2d6jqR4wxB8ZOcWWENq/WkmzhcvnXetSzgb82xtz++OOP58qsua0QA06WPRH/eQYgZ8+evUNjY+P+qvp64A3A/xhjTAkQTXTIiYjxh9sdqvr5fD5/c7n7Mg2+Z9/3Gz5hs9nsYcAnjTGvjhEoUoNrWZZsUNX/iMgvgiD4SSqV+kdnZ2d/GbBNZc1kXEKnpRZr3rx5+1prjwTeKiIvN8ZIiWsa5Q2tB+HvReT/urq6/uBf4jmZong2g284tmhtbX2htXapiLzD3/zxgC4glvNyznWJyE+AFV1dXX9hS8Hysz3xXFFe197evp9z7u0i8k4RWVASQ3sMhiB0zn0PWJbP5x94LsaDz0bwDdPbs2bNmtnY2Pgx4BxjTIMLd0Et7uXw440xOOcC4Peq+vV0Ov3zMgnm52pFgIl5GNF3T2UymdeKyLHAUTH2OFBVJyLWGGOcc70icvHQ0NAX161bt7kkLp8G3xS6UtEJ297evlBVP2uM2cOfvEGtoItcS+fcOuC7wA25XO5fzyELtzVAHLaImUxmF2PMe4EPiMiekUuqqkURSXt29EHn3Efz+fyPnytWUJ5F38MAgb/RF4rIQn+Ti1SfoysF3cPA8mKx+K21a9f2lFjWacBVd0+ig4+Ojo7GYrH4Dmvt6cArfAjgVLVojEn7//+OMebDnZ2dXc92K/hsAJ+NESrHi8gXRWQn7yJWG9cp4GKgu1dVLwW+m8/n+2LvMy2ZGv8+20Ir297efiRwHnCoB10RUGNMnXOuW0Qu6Orq+taz2QpOdfClgOLcuXPb0un0V2LWrloXU4FARFIedPcDF+Zyue8AQ7H3mBYLJ2sNh61ZJpM5XEQ+LCKv8yTMoDGm3t+P7zjnPtjd3b0uHlJMg2/7xxUKaDabfbOIXCkiO3trV22CPIgRKY8BX6yrq7th9erVA7HTdtq1nFiPZdiTyGQybxWRj0e5V+fcoLW23jm3WlUX5/P5X/MsywvKFL1pAaFC5bMi8tGY25Kq4vkOwDNtm1T14r6+vks3bty44VkIunIqlvHoU6N/J0JxE19vk8lkTvAg3NU5F8TSEp/O5/OffDa5oVMNfCmg2N7e3gF8TUQO9ekDqojthl1MD9bvGmM+2dnZuWravRy3+xiXpW1tn5dhQO2yyy6zisXihwmlf/WqWvCx4K+HhoaOf+KJJ/LPBjdUptDntECxtbX1EGvtN40xHc65Wqyd8S7mfc65D3d3d//yWQw629ra2uCcm2GtnSUiswnLiGYDs1V1hog0AunIhVfVQESGVHUQ6AP6RGSzqm6w1j5VKBSecM49OXPmzA2rVq0aHOM+bQ0gh0HY3t6+n6p+3hjzRuecetHsaufc+/P5/J+mOgBlinxGAVx7e/tiVb3ct9CrllQp+scXROQLzrnPeQbz2cpemrlz585LpVLtxpg2YI5zbjZhl7Sorm8WI7V9c0VktjGGMr1c4iVFRVXtFZENvsfLY8DDwH9E5IFUKvXYmjVrNlQAU1mNaDWHrY8HTzTGfBaY5z/PkKqekc/nr5vKYcJkB1/EjNHe3n6hiJzvnItO07HcTAeIMUacc38LguDsnp6evz+bYoakrt12223m0NDQXFXd2Tm3u29x+AJgL2AXEakrLbiFkep67/k/oaoPA/80xtwRBMGd3d3dD5dYJomBxVV5/wFcNpvdWUQuBBapalSm9cVcLveR0r0yDb6EiJX58+c3FAqFbxpj3undzGoS5kUf26lz7jP5fP5ThNrL51JcN1aHtDGlcPPnz28YHBx8njHmRcDLVfWlIvJCEdlh+EVCD2SLXi8ekM6D8a+qegvwp+7u7tVlYvhqgDjsXmaz2Q94EM4REYIg+F46nT7es9RT6lCVyQy8TCazk4j8yBjz6irjOwWcMcY65x4WkcUx5fy0tRt9D5QCtSwoOjo62oMgOBA4zHdu2ydWPOt8B20bWcsYGPsIC4h/YYz5RVdX179LLNxYqqFhze7cuXN3T6fTywkbWeGc+wOw0BclT5n7LJMYeLuIyM+NMS90zhWAumrdTFX9noic4VvcTbOYW2894zKx+DraTCaznzHmjcCbVfVlsbo+50mcCDg2VhHigDtV9Uci8uNcLvdgDdYwsoKSyWSWisgnjDEmCIJ/ishbc7nc41MFgJMNfFEq4fmq+itjzG5VWrwoHxQ4587P5/OXTlu7CY3DI1AWS6zivs65twPv9O5paUsOLXVRnXNDwB9U9ZuDg4M/jXXKHo0QG44F29rajjTGXGutzTrnHhKRN/n00aRnQicT+CwQtLW1LTDG/FpEOqpMnBeNMSnnXGcQBO/v6em5lWl1yvawjFuUE2Wz2UOA44C3GmNmlBQvb9HzJQbENcB3gK/FrOFoHdBShOmnXa21X7fWviYIgtXOuSO6u7v/M9kPX5mEwPutiGSrTCVEwPsL8G7vckzUiRfvrzJ9VbaKW5QTtbW1zTfGvA84wRizW5kOAs/oDuCcGwB+BFyRy+VuL7V25QC4YMGC9Pr16y+vq6s7OQiCLlU9zBfpTloAymQBnnc1/+DHZI0FvDix8q2mpqaTfOJ3IoAX72VC7NSetnpbrg8xID2jnGju3LktqVTqGGPMmSLy4gptPKJYb7gDGvAz4OIS4qxck+FI6/shY8yXnHNdhULhkHXr1q2arACUSXBSOk+u3CYiu1YJPPWB/We6uro+EX+thNdmuP9LR0dHu4g0qGqus7Nz4DkEwEpNc7WGexy3hqlMJrPIGHNBDISlKaThLnJRPxjgZ865z+fz+b/ELF7c1R2+X21tbe+01n4XyAGv9E18J10eULY38LLZ7BzgjyKyoArgRS3LRVXPzOVyV0xAfLeFuqK1tfWFfvLQo8Vi8Z++1cFzAWg6mrXYY4896nt7e2eIyGwRyQJzVXW9qv41VgNZ8TDzceH7ReSjIrLnKN0GgjgIVfW7zrlP+5iuHKmWAoqZTOaVxphfqGpPb2/vy7xwflIBULbj+0pHR0d9EAS/s9YeVAWr6UTE+FPyfblc7vsT4GYO38hMJvMC4ARgg6p+p0yC+NkWp5UF284775wtFou7E6pd9hKR3VS1XUQyhOoXVHWliHw7CIKbvKpltNTOFiBsbW1tNsacJSIX+C7alYTycRD2qepXent7v7Bx48anysSDKaDY1ta2t7X2VqBr5syZL1+5cmWRSTToU7bj6Rpks9kfGWOOrgF4/c65d3Z3d/+CMO9XSBp03hL/L7CXql6cz+d/O0Fu7WRgKLc4uFpbW5t9x7GXicjLgRcBz4sGe0ayrlgK4WdBEFzl78dWrXtbW9t8a+0yz5COViIWr8N8FPh4Lpf7Xhx0JRZwFxG5A7gvl8u9gUmU990e4ItOpS+nUqkPVpFAd77pam+xWDyqp6fn9wkCr7Sv53nAGcCKXC73Sf8ez5a0hSkHuLa2tr2NMYcAh6nqgcaYncuIqwsikvI62adE5HvA1V1dXfeUAGk861Qqon6DiFxojNl3FB1vaQeCH6dSqfPXrFnzaIkVtISKmLa6urq7VPXX+Xz+BCZJDlC2B/Cy2expxpgrq7V4QG8QBG/q7u6+LcGFi1u7w0TkMn9Tj48N+Jjq1u4ZdL539w9U1aNU9Y3Ai40xNga2YffTt/hLeyuzQUS+WiwWr+zp6flvbH2SmkI0/FqZTKZJRP4X+HAs1EhV4ADUs94bRORjXV1dy0vurwWC1tbWedbae1T1K/l8/nOTAYDbEnzRIrw2lUr9zt/k0Vo+OE+sDIjIm7u6un6f0IINn4wdHR3tzrkvGWPerapXdXV1neVv2FQv1CyXb1tgjHmHqr7dGPPiCnMW4mmVyLV7CrgGuNznUaN7OVHlWHFX9DXGmCuNMfuM0SIkiOUIf2yMOdN3P4vuowUCH7/+DTjLtyjcrikI2YabwbW3t3eo6l0iMjcGvnLX8EQd59xbfUyRBCBSMffmZGPMl4E659y78vn8Tc8Ca7eFJWptbW221r4F+ADwOmNMXZl5CvE83TCp4ZzrB64LguDinp6ex2Lr57bB+gy7onPmzJlRX19/oYic4j+3q7BvFAi86CIHLM7lcj+LWX7jAbh7EAQ3O+cWdXd3r9ye91u20XsY797dZox5pT/F7CjAcyJiVfWYXC63IgHgxUmePYFLUqnUEcVi8e5isbhw7dq1jzK1BdhbgM6rSj4AHBtTlcQBZyqtuXc3v+Oc+4zfnGzHtYlbwfcbYy4XkR3GkB1G5WQA8TxwtN+Ctra2A4wxnx4YGDhm/fr1m7cXA7otwBexThdZa8+rIs6LJGNRHm9ryZV4+uAUEfmitXZmsVi8obm5+bQJVMZsc9B5YfOZwLvi7dlLHlt2s3qX7U9BEHzS62O3hkSZECvov9+3jDEvGmMfxZtk/TIIgg/09PSsjT2+mMlkDgden8/nP7S93E/ZFidXNps9SkRurkIoHQHvc7lc7v8lALyIWZ0rIpdbaxcBBEHwsXw+//kp7GZuwdL6XifnedClqxzuGa/071LVJfl8/qvbIKbbqnvp3dAbjDHvqKJVZLSfHlHVY/L5/F1xAGaz2UWqavP5/He3BwAnEnwG0J122qktnU7fIyJzvOtjxlio7+RyufdupTUa3pzt7e2vVdVrjTG7O+cGVPWE2GJPxRRCvMHQ81X1I969rIupREbbkFt0cXPOXeGc+5S3DJN9aGWcof68MeYjPikvowHQf9fNQRAc193d/aMSC/geVf3X9oj/7AS/tps5c+b3rbUv9rPaKr1fYIxJBUFwR3Nz89Hr16/fmlN3C5Et8DVjzE7OuXUicnQul/tpLIaZai4meEnejBkzlojIV40xL1dVWyJSllGsnfG62Ludc+/u7u6+qre3tzdGpkzmw0gjN3TTpk2/bWlpWSsib44xtFKJ7BORemPMMS0tLes3b958R7ROmzdvvq+lpeUljY2N3X19fYPb+iSZsBOqra1tcSqVOncs/9yTK93W2sMee+yxDYy/csASCrWbdthhh+tF5EOeRFgjIkd2dXXdMQXjO4kfFplM5iRjzHeNMUeqarpK0EUWwAIF59xnmpubP7BmzZpH2LLV31S6Ups2bfp7S0vLv0XkrSJSNwoAo/2k1tojm5ub6zZv3vy76KCeMWNGzlrbvmnTpvVsw/TbRLyRAbS1tXW+tfbfQDNjN/HBOfe67u7uP26F7x0vrFwhIgd65u4RY8wbp0p18yhs34HGmC8ZYw6ucfpSnHy4S0TOiIkIpnqlf9T54HWqepNnQsdi0qN0xOW5XO6saA322GOP+lWrVjmSkyxuF/BFJMsvfbPT0Raj6N3Nc/P5/CVbAY5IOfMK4EYRafe/f8g59/p8Pr9mCgIv5Rm+RufcJ4ALfFxX0zyKWLv1C/P5/CeAQZ5dfW3i9/7nIjLLhzijtZaMOmB/NZfLnfRsYTsjd/N9qVTqm2O4m4ExxgZBcGM+n1+0tcDLZDJHi8i3gUav3ngYOHQqNdQpjVkzmcyrRORyY8x+4xjwWTTGpFT18SAITo2Jn5+NfW2ig+qlzrlf++bAVQEwCIKv5fP547cHAWcT3jR0dHTMAm4GmkZxN6M477/pdPrNGzduHBpnzBEB72RjzLcA47WAjznnDvUWbypttmgDmEwms8QYc72IZLyLWe2swWG9YxAEPy0UCketXbv2n2w5tvrZdjkg9fTTTz8+Y8aMPwLHiEj9KDEggFXVgrV2/5aWlo5NmzbdPMEE5ISDzzU3N19krT1kFHYzUlOgqm/r7Ox8iNopXom5Gx8yxlzmRwynVLUHODSfzz86xYCXAoKOjo49WlpafmitPU5VI6Kg2sm6kcZRgiD43+7u7tP6+vo289zo4uY8CbNmhx12+JuqvtuL8hkLgMaYA5uammZt3rz5l4ywvlMGfFGvzZcYY64eQzQdBbyfzefzX6N22n9Y8ZDNZv/XGPM5VS0Q9oXcrKpvyOfz9zF10gnxnOQ7VfVmY8zeNXTnHnYz/eGzVkQW5vP569myGe1z4XJA3aZNmx5pbm5eaYx5V8z6jWUBD2ppadFNmzb9YVsBMCnwRZTtt0VkNyrPUgj8Brk7n8+/b5wbI3I1l1prl/l6QPHyqLdNsek1w3FGNpv9vIhcKiKNnrFL1fA6UXz3j0KhcGR3d/ffee42C3ZA3ebNm++fMWPGE8aYN/v1HM1lN6oaGGMObW5uzm3evPnObQFAm9BrBJlM5q3W2o+NQvVG4tUAOGrTpk05as/nRa7m/3rgFQG8Wv/kfD7/A0JJ2lQAXuRmzm5pabnRGHN8mW5eY11RF7dUEATfA94e0zAWee5ekQW8o7m5ucVa+yofN5tRvA9RVWeMeUtLS8vfNm/e/DAjMrsJY9a21mVSoE5EPuvdzYrqCmOMVdUv5HK5f47jZImAd74x5lMeeOop48/ncrnrSba1xISzc21tbQucc382xrxpHG5mnFj5TD6ff7dvXGSe48Ab9gaAVD6fvyAIgp8aY8YKQ4brGUXke76HT5AARiYMfJZQ7vR+Y8yCUehdJyLGOfdAOp3+zDgIgMjVPNEYc6HPdeGBd3Mul/vYFDrto0PkMGPMn0Rk7xqGfG6xnn5Kzyk+f2efY/FdVV4BYAYHB98XBMGDPufpxnA/nYjsKCI/nDNnzowxCJvtBj4hrAZvBD4xhtWL/naWH+VEDeY82qxHGWOu88BTEUkFQfBQf3//cYywpToVgJfJZN4L/FJEZo8jvgtiPW3ems/nr2Vq6DK3l/sp69evfzoIgoWEE3fHqt2zqlo0xixIp9M3MNILRiYT+CxhpflxxpjnjWL1At9j4/u5XO53NVo9692zA0Xku7FFE1UdMMYs2rBhw8YpcOJLDHhn+5ykHUNsXgl4lnAQ5Rt6enp+FrP408CrsGZAau3atfeq6hm+X81Y+y/lnCtaa9+RzWYvYKQVxaQgXATQ+fPnNwRB8G0R2bGCeVYAVe0Fjt68efPTNVi94dYTInKLtxJRnJNyzp2Wy+V+yeRPKcRTI5+w1n5xHMRKHHiPF4vFN3R3d981TazUZAFTmzZturu5ufl51tqXVMGAindBD5sxY8bvNm3atDppAsZsBWi1UCi8y1q722ixnjHGAF/yapNqk+kCyB577FGvqj+MDU4hqvnz87gn++YbBl57e/v/GWM+7eO7arWZw+SBVwQ9Yox5bU9Pz33TwBuXBTTFYvFM59wjVcR/Ert/39xjjz12iIVP2xV8AZBS1fM0PqS7DCkQBMHjhULhYmpTsVgg6O3tvcYY89JIXuVJm8f6+/tPZ3IXfW7hNmez2c+KyMfHwWhGFi8FPKSqr3v88ccfmQbeuAkYWbdu3Wbn3Amx2E/HIGCKxpjdent7L43Ff9sNfCnCkqHDjTH7jiYjk7D76qf8fANTpckejo2stcf6JHpk7kVETozFeZM5zom+x6eMMR+LMZq1As+q6sN+5FWkVZ0G3lYYje7u7j86577s478x58E754rGmA9kMpm3JRn/yTgB67LZ7G9E5PUVkuqBFzg/kMvl9mNEaTEWWKJypFeIyB+9ttEwMg7sslwud/YUOPkj4H3UWvu5caQS4sB71Nc6rmZ60m5Se95kMpl64B5jzO5jtLGMvDhR1W5jzAs7OzufisWS28zyWcDNmzdvX+B1/kOXPQUiq0eY9K7G6gmgu+2220zg2zErod7dfCQIgo9NgQ0YJdAXx4Bnxwm8rkKhcPg08BJ3P/GChDOq9KCMV79kgiC4kNGrJSYMfAKQSqVOHoWyjWK9+3K53A9qiM0s4AYGBq7yqYv4HG9xzp3Z09PTG1/ASWzxjrbWXh0rJK7lRkXlVuuLxeIRk3m44xR3P20+n/+Nc+57VaYfrHMuMMYc397efgi11VZuNfgEKM6aNWsmcIznWUaL9T7HSPu6atzNom+M+u6YmxblCL/X3d39KyZ3WsECxXnz5r1cRL4TY4BrAV6UmulX1aPWrl17L1Oz2dOUIWCMMRc45zZVaQEFwDl3GaGUcavYT1Pj5qK+vv4oY8y8WK6qnNV7aNasWT+guiEaUQy5szHmKzECJ7J4T1trP8TkTqRHE1Hnp1Kpm0SkYRwxdVTnaIB3+Qms06zmxF0OsF1dXZ3OuS/4lNhY+8uoamCtfWEmkzmdyq3rEwdfNLT+uFFOCJXw+srKlSuHqC4pKeFhr1cZY3aMydRcNPrZD72wkxR8ApDJZJqMMT8SkbYqErhlXSEvPD89l8v9hKlTnTHV3U+jqpc451b7g29MAPpeoZ9sa2ubuzXxn6nhcW7u3Lm7A6/2/URsGeBZ51xPQ0PDt6q0elHPl/dba+PK/siCPpxOp7/C5G/k6oCvGmNeEusqVssVNQz+Yi6Xu8pbvMI0NraJ62k8l7DMh0vVGAtnrZ1tjPk4lWtXEwUfqVTqHdbadAUgBH6o4tceffTRjVVYPUPYJGgnY8xFJSoZFRExxnzcC7Ena04vIlg+bK191zhTChHwfpTL5T4yHeNtH+uXy+W+5ZxbWaX1s845p6qLvUEal/tpaviAArzTEy3lNJzWOTdorb027qaOdYKIyOeMMfGRYYGI2CAI/t7V1VULW7pdCJbW1tbXGWM+vxUphZRz7t9BEBwb+67TIultbP28p/HpGq1fQyqV+uR4iRepEqDOjw++l/IMXtR/86f5fP4oxqbGLWHPkpcDt5cwg1Ht3+H5fP43TE6a3QC0trbuZK39p+8wVqv7ETWRerpQKBzoUwrPlrnvU/EyhMn3e4wxe1dxP4c7M6jqi/L5/IPUSAqaah9jjHnzKPkQo6qIyDWM3qwm/sHFOXdx7LHiLYEJguBPHniT1epFqpvrjTHZKnpElvv+0XOO9cBLTQNvu9/Tooh8qRbrZ4ypAz46HutXbR9IVPXNFVxOF/XKrKur+x0jfVpGi5NcJpN5l7X2FSXyNAEQkU/XYJm3i7uZyWTOKSGJanI3fZz3f7HBLdPM5vaP/cQY8/0amE/rnFMROWbevHm71Rr7mSr+7trb2zuAAyuM+HKeaPm+J0dSo5wa8er3T5dUvwfe3bwjn8//bpJaPUM4V34fEfnCGK3wRwVeEAS35PP5/50mWCZV7Gc7Ozv7VXW5t37V8BaBMabBGHNWrdavGvDhnDvYWtsYI162QL93u75XBdFiARcEwcnW2t3LuWuq+iW2gr6dwGu4vst3kq4fh3V2IiLOuXWpVOrYWIwwTbBMjssBFAqFr3nVSzV56sj6HZfNZudUwMi4wBe98etL/p+YtRJV/Vcul7tnjIBTgMA3pflIidVzPkf4YHt7+0/97yebG2YIWyR+2Fr70nHm86LD5sTHH388N02wTErw2SeeeCKvqjcZY6rJVUfM5yxVfV/MyGwV+AQI9t9//zrgVRVcTvWM3Q8ZaWs+mtXT+vr6U6y1pSRF5LpedddddxXYxj3zawDeC0Tkk+N0N6N83hVTeEDnc+US4LoxJilv8XhPOJ5Sy30dC3x0dnbuJSLPq0C9Wudc4Jz7yRgu57DVU9VzS6yeAqkgCDYQlhIxCTdl9FmvHKdu0/luaw9aay9gukphshMv5PP5251z91UrOfP9Xha0t7e/pgpDNCb4ohTDK7zoNCgXv6jqvT09PSvHcDkjq/d+a217idULjDGIyA/y+fwTTHCX4HFccQnca8cYvljJdY9E0yd0dnb2V3Dhp69Jds+B73iPrJrQwIVw0BOSIFyizfHKUd4MVf0lo/e2ECBYsGBBWlU/WKa/p1FVDYLgOiZfaiHq0rajMeYLY/QmrXhTfFnUxblc7vZpd3PqEC/GmB/4NibVSAatc06AN2cymZ2qIV5MFeTA/hV8X+N//6sxTnIL6MaNG99irX1+qdXzOcJ/9vT0/GMSupwGcENDQ/9rjMmMo1phuMTKWvvJaXdzSoHPdHV1PQzc4a1fNcRLYIyZKSJvqYZ4MaP8Xtvb27PAHmWS61Frh5yI3DlGvBcl6c8u0+lM/Rf7drV+8rYGXjab3UtEzvBlJLV+vqjp0+nT7uaUu6I0201+j1Z13/weP2YMTIwKvqhid4ExpoFn1iwFIoKI3O57YVSK0yyhmuUlwKtLqt8jomXAOffDaj7s9nA5gc8aY+qpXT4UVeF/M5fL3TJt9aas6/mLGlRMxjf9enVHR0c7YyheRgWfiOw3RsD5+/jjK70OcFKZnEmUXvizbxA0mXJeURe1g0Tk7eOwes5Ph10fBMEFVN82cfqaXOCTXC73EPBvr3ip1vVscs4dzhhdyceKX140SnCpIvKXUSyWAMWZM2fuKCILyxTgqohgjPkBtbdOn+gr6qXymXG6iuqnCH1y7dq1PUwn06fqFXl0v63B9YwecxRjtMusxOJECH9BmXgvElKvbmxsfHCUzWmBYmNj41uMMTuVJKaHXU7gl4yo/CeT1TtMRA4Z7zCTIAjuyefzV0+Eu6kgS0u8jWXT4J6wQxj4nap+pEoDYZ1zqOqrZs6cuePGjRufokIxeKpSrONlYLuUsZCRquXuVatWDY6yuSKf+f1liBbne+X/I5fL1TLDYZstuHPuk9bacRMkInI+I+3lEnU5pboGxNNXQnFfXV3dnUNDQ+uNMbOrSDdFpUZzmpqaXrZx48ZfU6FIoCL40ul0O7BTmVEMkUt2J5Vr9wzgWltbdwVeE+s8vQWAnXO/jD9+sli99vb213mCqGar5yfF/iyfzydOsiiIgH4V5tZBdjMELWD7Ye1iyDP5W+hPRctnVq9e/VQmk7kbOIzq5jVEXegOBX5dCaxmFJJkl5i0pjQpjoj8gcoMYKSOeatnCoslj4tM82/HGVNNdKz30Vro5dhzxTlXsNZ+jAkQDCwFUZAhuFnhXwb+5eBfCrcsgbSOTn5NX+O7Ioz8pYY9EWk9X1MSxlUNvl1HYTqdqp7ESJctW85ci8jbK8SMAjw2e/bsf49C2GyX4Lqtre0AETlsHAxn4FsdfrOzs/M+Eq5HXAF2Gbjl8LpGeMUAOAE7AEEz7N0ORwnoksknSn9WxH3GmL9VKCYviyv/2BfOnTu3jQolchUDSFWdP8pJYKy1J2Sz2Z/HaphSZVzOl5VRx0Qphr/U0Ntzmy20MebcKgspn+GeOOf6nHOfngj37/7IKsMFpuTACkAdnD+JDrJnI+lyr3Oun+p70ToRabbW/g8VPBIzCmHQUe6D+FjtYefcRmvtG4DbWltb9/GuZSrmcr6hgssZgftWJo+bNNxxWlWPds7VqrYJvPj8+p6enseSjmG91dPr4H/S8PoBP2nVL54dBK2Hly+Hg5eBWzFt/RInXbq6unIi8t8aXE/nhSgvqwV8kcuYKWNmo96cVwZBcLhz7gljzD7W2lvb29uPBIoLFiww/vlHVnLvnHMuCIK/TaKTOvrMJ45SsT/ayWidc73AFyeQ9NAinJ8Go89cM+eP4w/FreT0lWhI4lT1PzVUOYjHzwGV9rkZhXTYqQxio/9e29PT87disXiIc+4+Y8xOqvqT9vb2c1euXDnU2traDLyyTGI9ivce32GHHR6aJGSLAIHvK/OBGgoo41ZPVPXruVzu8aSt3hIwi8BdCbtZeEd/eQ1sqh80BUcsh32XgU5bv8T3CMB9tT5HRBYQtv5/Rlt5U+YJuv/++9eJyI6VAkljzCOEbbbvN8Yc7Jz7lTHGisjFmUzmIhE5WER24plsaJQj/HcsR6iT4FRTVX2TtXbnGisXIqs3EATBRRNk9QygFs5qhAatbJWDerAKH2Ta8k0MAkX+U0OoJKqKqnbMmzdv53LPK7vJNmzY0ATMKHlCRKUPBkHQ7ZFc19nZuT6Xy73ZObfcx3rnGWO+P0pna2KVEJMh3ouqLk4cZb78WFZvxdq1ax+dCKu3DIJLYS7wgX5QrWzRbD+ogWOugJ0XgVsy+ZpQTWnSxTn3SC2tJfB9Pa21e1QDPgEoFArNQGPpXvQB5IYgCJ70v4rm77lcLndqEAQf8Y9rqXD6Rn7wPyeJy2kAt8suu+wGvHYcLqdxzjljzMUTdJAYQjLl5GbY0UEgo4jYFYImaLZwGpOzA9yUJl3q6upyqtpXg4cTMfsvqNryDQwMNAL15dAPPLlu3bre0g8GpPL5/BdV9V2qOlDmwylhm8FARB6YROCjUCgs8sxsLURLYIwxzrnfdnV1RZ3bElWzLIPgcmgROH2wOjCZAVCBk26AHZdCoNNJ98SuGTNmPAGsG4cAY8+Km+8Zvwxr+FJl3E6AJ2Onqsb+5gBTKBRui8nJtEy81y0inZMEfFF8d8w4rB7+OZdOhAu91MeiaXh3E7QXquuGbIrgmmHuEBwnoEuniZek3E5ZuXLlkKr21LB3I09vt3LPqQS++nIP9oh/osJmi/oXvspaW86KRK/1UGdn58AkIFsMoNlsdj8R2a/GQSdRn9GV3d3dv03a6kVr+QdIOTi3GFozqfKJMhQm3c+6FOqX1mbNp68xvCSgx+Og2vsI0B477EeP+Ywx6TJvEAFlwyjgQ0T2q3Qy+NfczMg8B7u9F1NV315lc1RKrThwrY97E/0eK0KixT0Mb2mCvQdrmwFghsC1wO5pePu05CzRAxERqcny+efM8+m3LXBT9oY65+wortZTozFCwIsqMJ3WkxNHZrPZb8yaNWsmW8rStpfLeVSNLmeUXnjaOfedcifa1l5RktzBh3ScuyQIX+M8ndyz7Kfi9WStoYmqzrTWzq4KfKO5KSKyqfL9xorInqO8hlFVa4x5f1NT018zmcwrGWFMtyUzZwDt6OjYR0ReWKPLGYRKMm7u6elZm7T7HAmor4bX1MNBkYC6xpexg6CNcMByeN205CzB4E91/TisZaOIzKqKcBljM/VW+sO8efN2AjpGUX8Hqjrk/763MebWTCbzEX8yu21oBQ1AEARHVmgIPOpzfbnIDRMRS904cgM+5FE9LmBrmPMblpxNXwn5niJP1/gUJyIUi8XqLJ8xJhgF+QOVNrMxZpdYju8ZZItXj7xFVe/yzKdaaz+fzWZ/1dra+rxY/DTRBEGkX31jDWUi0UIaVX1gjz32+FPSLqeCuTEsG9q3Do7sD4mWcVksX27k0vCGa+DFi6atXzIbx7m+2m8rGGN2HMvyRZn8QiWxh6oWKplXa+1oNYCIyBDw54aGhkOdc38wxtQFQTBgjDk8lUr9PZPJvJeRmeQTtVEM4Hyd1YE1xntRl+7v33bbbYkTLTf65K3CefUJVMFrCD4TwHlMS86SuvrHCs1Kb4NvFDajWsJloNIbiMhoVnHXCm5rlOPbUCwWzaOPPrpxxx13fKNz7pvW2gbn3JCq7mSt/VY2m/1GrN32RFjB6KA4yBjTTG1UvHXOBaq6Im5Bk7giAfVy2MXCojGkZFXHfl5w/c6rYNdpyVkibmexdhUiqOqMqmK+dDo9EDt1a3mnXcb4+9Pr1q3bDJiVK1cWcrncsUEQfFpE0iHmXcEY834RuTObzR41QVYwCoJfV+P3i2YR/qO7u3uswTDjJoEcnNkITTq6lKzq76oQNEKjwBlMS8620pHYqgO3sVrCpR8YGI2sqPDBshUsZvT3p0v+3+bz+U+q6geAgojUBUEwKCLzReTmbDa7fJdddpmVsBWMLN2rak0xeG1r1F3bJnhXZRkE18JsAycMJGP1ote2XnJ2/LUwe9m05Gz7IFc1XVXM9/TTT/cB/eUy+SJSV4nAAFpHM8mxNEUkTA2AVC6X+7qqHqaqndbaeu+GOmPMKcVi8R8JWkEDaCaT2ZnyPUlHu1K+bfhPtvIEfMa11KcrHJzQDHOCZKxetNAShH1e5hThBKYlZ1vlMalqqgaFS3zv26osX3t7ex+hEqWcW1ZfwfIJMGuUWBFG0hTxvxcJRdl/Bg5yzv3JWpsmnN1eEJHdReTm9vb261tbW+cxkhw3W7GAB9QopA6iXqW+fXiSLqcshWAFNCqcOTgxrqEZClMPZ1wEjUunJWdbE/PVJxlnPMPyeQHpUxXImKZyG7qjo6NBVXcYw1+uROQUAZvL5R7P5XKHqurVxpiUiNQ554p+6ufx1tq7PCM63rxgFO+9vEZleuRy/jRpl3MJWAF9Eo5phvmF2qRktYDPNcGuLfDOacnZVl2N4+BC8D1gx7R80e+eLPcmMcq03IdqHs2VU9WhMWIxAxS7urpOC4JgMTBojEl5MiYQkQ5jzLey2exN7e3tz/egrQUM0QIcUKPLaZ1z6geB1rzwY7icwYoQgJGAesJ8piCMJc9dAmbp9MSk8V4zxmkxh6oGn4h0l7MOqjqznDUBGscyySJSrBIcNp/PXyMiBwMPeACqqjpVDYwxb1PVO7PZ7AWE/TGqIWSEML/XAuw9BuG0xWfyLOcj+Xz+30m6nEsgJaBPwBGN8KLBic1v2gHQBvifdni9TPd5Ge+14zgJl4GqYj5/dVb4/awKFrFeVeuSIehCIqarq+tv1tqDgiD4ngdgNLAwAHYwxnwxm83e7tu7R4RMqgIIBSCdTu8mIq01jHiOWsD9npEGwUlZPuc/2IeStqgV3edwoaa7nI0/5pszzuf11gK+NaXP967anHIbpVgs1pVjdErQX4tXVQTsmjVrNuTz+XcHQXA2MODfQwF1zhVF5ADglkwm89X29vYO/7xyFiQqIVrgS4iqtV5RnPjbJG9iTED9ino4eJwC6lpdTzsIrh5edzUcMN3lrGajgKrOHQ/P4JzbVA34IonZYyVxUfTvTiUuYkTE2NjrSQX012oZI1bO5vP5y5xzrwb+FbmhhCJn5zWiJwB3t7e3fzDmij6DFVXVF9ZgZaLyoT5jzO3lvncCd/RDqQl43VHez9WFazItORsH+BhJp1VrSMR3/HuqdN+N1rdztXfNSk/GOb7H5RYfIJVKjRk/qWr9ONyrYTe0u7v7TufcK51zl/nhk8ODXLwrOldEvpzNZu9oa2s7kjKsqIjsPdoBUc7lVNV7H3/88VxS8V4kJbsC9q6Dt/SPuMvb4rL9YSvCt38VdpuWnFVtvRxgRKS1hv0z/DhV3VA1+BoaGrpUdX2MdIkmr8wuV5tUKBR0rA9AGYlNrW5oPp/vy+VyZzvn3gY87q1g4K2gelb0Jdban2ez2R90dHTs659bBFKqunsNJ1dUsR5VMCTiou3jRQYGPtgwYqW32UbykrP6IpwF6D7TOb+qrvnz5++gqvNqAN/w5KogCDZU63bK6tWrn4rFfRE5oUBTsVhsK/0AIuLKmOi41QNo3kpiIe6G3lwoFA50zn3HN+wdLuj1rqgzxrzDOff3bDZ7cVtb21wPwI4aFi+Kc/+cFCESWb2roN3Ce/oTlJLV4EpYX6503KUwdxG4acnZ2NZraGioTURmjUNY/XRjY+P6aixf/PcPlpQIRX0Idy7jdhYYybtVYnx2SGATD/d/Wbt2bU8ul3tvEATvU9V8zApC2FMzABr85KF/ZTKZixjJRVYb7w2IyN1Jgc+vrQqc1gQtLkEpWQ07SVzY43NWA5zItOSsKvAB8yvMrBzLc3pi9erVT1dj+eJvdk+5FxORZ3Tgdc4NVqj1i/u9OzBC1W/thotbwW8bYw50zn3XW0HDSGGuOucCY0zWWnueiDRUafmihXs4l8t1JhHvRQLqL8OOAicPbAerF7/3g+H7n74cmpZOS86qAd9eNQxKiR/WOUaUS2Navoh0uaeC8n+v0sd6CzE02ocXkR3mzJnTlDADFQC2s7OzK5fLvadYLC5S1dUxRjRq1uu8Jaz2iqz83SSkt/TWRRvguGaYVwjTC9trw5tC2ONzZ4VjpiVnVSBQZJ9a96ffQ/8th7dRwSci9zvnBmOIjWKgCHwjAxqDoJ8KlRBRzKeqMxsbG3eokS2qyQp2d3ffCOwfBMEVEl6RFZRxEiZJzZWQpeHchXoDZ3mh83a3NEUvOVsBdum05Gy0/QWwT41phuh6eLTY7hmnPkA+n+8UkVVxxtMDafdMJtMUB9+6dev6VXVThdhouItTbPTYBPAIoRXM5XJP5vP5M4MgOERV/+5F2rVOELJ+oe9JIt6LBNQN8I4m2H1oYgTUtfpSdjAUXO+7Ad7orV9qGmvP2Ls6e/bsHRhp+17tfYuM1YPl9tBoL5IiHAh4d8zPjdINmdjYaPE/gYg8NcpGdSJCEASZCbB8lazgbblc7pWqeh7wZA0AjKz8pmKx+DDJSMrcEjAOzg8mUEC9FSfXh0q9melrBCPpdHpPEZlbgyyRWLjzUK3gi64/l5wCgTHGWGv3ib1GJN16YpRCw0gjucsEg28LK0hYJfFl59xLnHMPVhkwR75657p167pjbse4YqJISpaFwxrhJQMTK6Cu2foNhKqXg5fDy6YlZ+X5Cmvt/n5PVOuaR32L1gKPlQXfkjFcT2vtX104YtaWkDEHlGGD8mO5aCKy23bw1VP5fH4NsJ7qxjsZf8Ltns1mf5HNZg/z6xEHYdWHR6wD9QWSgAs7AZdLh9/nfKYlZ2X5D+fcK2tdU//vgz09Pb08c3AQZi5Uytg7gM7OzgdU9b/eZRt2PVX1wDJuyuNjfhPVPdi2G1AY6Yo9pwarK0DaGHOEiPw2m83+IZPJHO1fZ6wKilKrp1fAgWk4dHAbCKjHcUWDNd96Dew5LTnb0tPz9/ll4+z5889KXqZJwfPGiPsKwJ9j7lpU7/ciH4S6GKHy2BjWBGD3Equ0Ta499tijLpbjq/74ClsFOhE5xBjzo2w2+/dsNnu8H3wRr6Aoe1N8B2o1cH46lHZNxpgqkpylAzibacnZFh5dW1vbniKye41jBaL1+1tlQMDOKyA9hiX6TZxcUVUVkZ3q6+tfBLBgwYKobOK/o5wOEfOza0dHx+xtEPdtca1fv76ekf4zVTc8jYClqhEI9zfGXG+tvSeTyXzYN98NYgfTsFVb4jtQXwXPT8HR21hAXatvFVm/918LrdPWb9haiTHmNcaYWpoYR+qooojcVYnIMhZmb4ZW/4yyrufQ0NCtvk12xPoF3hK+qsSlXOOcK5Tzb6NYS0R2LBaLu21r8DU1NaVUta5GXZ6UxHkmStaLyO7W2i+k0+l7s9nsJa2trS8siQuHBdQCZzdCWpO19qoJuu6R5KwZdnBwCtM9PiMQKXB4rYe2x8eqrq6uRyuCLwinmT4fYGl58Jknn3wyp6p/L5NyeC3AypUrA4CGhoY80D1Kc6LAGIMx5oWV/OCJuorFoq3F6vh+M+pPPGJxniGmmFHVnYwx51hr785msze1tbUdERFZi8BdC60Gjk1aQC0gqdBdTPSk960sFl8OLUuf25IzAYKZM2fuqKqvDjnHmscK3M4oY/CMCRnAF48ChiiN8NMYqIwnXV7qXcgAsKtXrx4QkUeqIFT23+ZHmKpU2W9xWFbmnHupc+4HMRBKKQjxFfWAtda+zRjz8Vi8rA4WN8EOCfbidOkQyPcW4RtN4YdJyqJGkrP2FLznOS45s4A0Nze/2hgzh9oOouhxt1R6wOXQYoA1Cv/j3aSyyfEQpeZn0SaLfm+M2dE5d5AnNCJ03zeK5YuY0pdsD9KF2nq2dHd3d9+Zy+UWBkHwcufcd4FiDIQR2SLDQAuPxyWAWwnBdWGnq1MHQ9czESuv4Zx2Aa4ROL8ARSnv5o/bohbC1zrnD5Ba+tyVnGl4ZuvbRERrWF8FbBAE/SLyp1KXMwrt6uB5JoBVDna/HFoWlUe3A0wul3tIVf8RSzlEpvVIgEKhED3vn1Uwnguy2ewckqluqNry1fiUTm/d6nt6ev6ey+XeIyIHOOeuE5E+L9yOQFgQEeOcuyuXy/3+FKi7EYIA3tcMmaSkZBpWoJvNsD6AFYvhiSG4uSnZmfDGS84WPAxveo5KzgQIfKe7I/3eqcnlFJG7c7nc4/55LvbC6oms55nTYa2BhhS8xDN0MorreWOp6wkcvmDBgvTq1auH/GP+5f1jW+FLOWPMjkEQ7Lct4z5jjCvXuHQUsOZjBIoBbFdX1z25XO5k4MVBEFwIrI2a+4qIGGO+BOiD4QKnHXwwSQG1hOkAUbj+dFhL+N8XDk0AOeIlQs9VyZkFpK6u7nXW2jY/V7Km/J6q/qLM/haAuTBPYG70h7XAG/wfTSXXU1VvCoJgIPpwqqrGmN2eeuqpAxjppfKgqvaMoqN0IoK19lXbkvFMp9NRK4nqNrpId8n3j4Pw4Xw+f0GxWHyRc+4C4LEgCB7u6ur68RJI3QbFdjiqGfZMUECtEqYD+hWuAGQFmNPhjiH4Y0OYNgoSArkdCLucveoqeOVzUHIWuZzvq4K/eAZwnXPOGPOz0oMrMmwGFjhwxi/2vcCR/k1cBfCZnp6ex0TkVj+T3DEyw+DtPu5L9/T09IrIv0Y5MaO47+Btear29/cXgKEqSJcoH/lEmYXfAoS+kv7CoaGhfYvF4hFAYaV3pQP4kEtWxRM0humAFafBYyvA3B/pDuHCCTjInPerzwf0xucO8AwQzJ8/v01EjhjFi6vkcoqq/rurq+s+nlmAbfyLvUygy/jd9XcLL7oM5iyr3M8jOr2/FrvJkev51gULFqRXrVoVWZa/jEK6RM85wA/BdGwD67du3bpBERmo4iQr7TZFhcMoio9T69at27xu3bpHlkDqRgiWwyGN8LLBrRjrXO5EHQAG4NLoMy6DooLsCL/sg3vrk439Un6w5puvhb1vfO4k3Q3A0NDQMcaYFkZqQWuJ937k98gW936pH8+mYXbhgcjy3dMAth4OJSz6LLdhAk+s/DwIgnzUINc3Ktpj48aNr4weY4z542hKF8J83w4iclDMx55IFwJCmVw187SN77O4sQqgauzmDAfWDi7w9GNSlq/YCNIA3zkH/imgi/y6LYbUIggMXDIBeb+gAeoCOIfnjuQsqoY5sUYtZ+RyFlWHHYW4y2kE9JqwEH2nU+BxA9AFj/VBr8JCv8haYaOl/GTZ78QS7k5EcM69L+bi3a2qa30VuY4SlB6xDdkrVPXpMQA1DFRjTG8tAF8Y9mfRa+DFaTi8P1mrZwJw35w1q3FeJvP6vUMWLgCCa6BwMKTugx9shs66EnZtK08t2xcSRu+9DLLPAcmZBchms4cYY/b1BF213zcKwW7P5/MP8Mz7YAjDhjcbWCugZgmYZTCkcKfAEd+A5kWVp5dGxMtXYzk/4/3it/kpsvLkk09uAv46Su1c5Hq+YcGCBekaTfu4XQngqSoT7UMi0ldLsL3QP9bBeemRyoetD7yAejCr0unCP5ubj04b85un6uruzWaz12az2aM6Ojpm/xGKl8HTTfDl+gQHuYgXXDdBSx0s5rkhOVNVPafGRkkRSSci8rUyLGf0WipwtPrWJOaQqEoB/jgbmgfh4FFcTweY7u7u/6jqb2IzDwJr7exisXh0bLP+apTNa7y7GjGlTPBNjRC3rhpAqeqQ711T1RVJyb4CzzOwsD/5Ylm9vblZA1VHKO7e1Rhzkojc7Jx7IJPN/iCbzX7ghzNn/mEA1hlIJejyGj9W+pRvwg7P4rHSBnCtra37eKKlFhF8JKR+ore396Z4mOb/KMvAXRJqqA9wvgmzWedvkoE7fG7nXaO4nvGNfEncJ/YM5inR3wuFwm+dc0NUbsEQJemPngCmrtLJ1F3FYxCRIc+O1nLjNA1nNUGDS0gTqaHV065UavA/jY2pBlXjRsTd0dDQucaYd1hjbvjjjBm33d7cbOtJlGY1xVBy1tYH7+PZ2+Mz7CJuzPkl/V+rcjl9BuB7GzdufMqDVmNEiwWkEd5GSDzcCyFdrYR+3z0bYFDgLVfCrFFczwCQfD5/i3Pun5Fg0luyl2az2ZcDsm7dukdV9a6YIqaS6/m2/fffv45tIOJV1Vw15IyqFtLpdFAlQGRZ2JVsroEPJGn1/NErf5kxo2HQmJQJ3fNhlpVYi/zAuaBedcbtLS079IoUbYJrKSBDoZ707CWQXvrsk5wZwO2yyy7PE5F3eatXyz20zrkgCILlpURL3OV0YYPiu8+H/oVgzTJP9Z8GOQf3zIIdDbwphthKgakDLoqplZ3/7zMZKcX48RgpB2eM2aOrq+ugbRFPqGpnNa3fRCRobm6uaoMtHenFeWITzEqqA7XXcOrTIk/c39BwZ4MqhGqauMC7GFs3W6eqPXV19r6GhmIDiSZQo7HSe7XBUc9CyZkAWiwWP2qMaazREATGGFHV3/T09NxXSrR4TsUth12a4UCBXwCcDmL8A6wPBv9swpv5vgoI3sL6NTc3/yAIglWe1RR/Yhw9b9683fyH/4mv76sEYiciGGPeN9FBdAS+KuPLYObMma6KF5WlEHwJmhXOGEzwABEI6kFSqpeuzucPbFZ9iXPuQ865W4CNxhjrpW3Gr3VRwaVU9faWFhkM0w+JXn5BzidBUmeyWL2Ojo49gONK+hVVdat8aqqS0CFSpLzXV3Lf4skHNbBFNcNtvSEiX3sd7LWsMrWsgF21atUg8KWY9QuMMY3W2tMBzefzDwJ3xIaYlDPXAG+bOXPmjhPoeipAKpXqcs4NMEYTpWoLbpf6Xpwz4V3N0FFIUEpmQpp/YxNcA7Aql/tnLpe7KJ/PH5ZKpfZW1YXOuWtU9T8+VkmJMbYezJp0um5Vff1AQ+jqJGUa7CC4Bnj5cnjNMnDPEsmZEFakLDPGROFy1VZPRMQ5d0dXV9cfKMNyL4XAr9OJG2Fjo+8DuzCSly30p1gAd/TDhhZIF+G4MaxEAIi19ptBEDxaYv1O8O0VAL47Cr0fJdx3am5uflvMpZ0Q8M2cOXOtiPSM4goPU8b9/f1SBfiCJZBycG4x9BySOjgiAfXXj4W13sUzUZy3Zs2afFdX1w9yudziXC63rzFmP+fc6aq6AtXHRMT8ecaM5gBEkl1EtSPWjxvL388UIz1tJjsraoGgra3tAB/ruXHsPxGRz5ULm1aEhzMb4DWzYXeFW46FXv97jdIMuiQU6a4F7tIwuH7vcmhaVtkaKeGMhH7gs/HYz1o7K5VKnQ5oKpX6sXPu6VFYzzhTygS5MwqYlStXDqnqY3FAVnJFent7R7Vg0QJm4c2NsM9g8gLqQeArMRfP+RgvkuNFlflBZ2fnvblc7qqurq5jMGZBUxAc8N90+oynjHmkobJed1zWzw/WPOI6eGEZyVmk+Il62mjs0CgF5aQBpohcSO01kYGIWOfcnblc7mf++eWE++pgsdfJ/grg/hGB9Za+qcCvg5AW3cXB0YxezRwAZtasWd90zv0nUrR463d6a2vrvDVr1uSBn3gqtqzr6YmXl7e2tr6UiWsoG3Vde3Asy6eqqaGhoVGBdP/I889P+HMGjaEw+0eL4ZEVPmAvc5hEhIvENrjt7OzsfzyfvyuXy13Z5NxSG1rQRAXe9ZAqwLmMSM4MQDabfUU2mz09m82+oqOjo91/pujQKAVlKTC3NTgtEGSz2XdZaw/2ZUM17ztVXUIZfXJsDuOuKXjrBigEcGvcwJjSeDqAX/WPtEo4YwxrpICsXLlySET+11s/IUy6z7HWngvgnLtuDJ2c8/VwZzHB/TxV9b4x/H9EJD04OJgazeotA/dVeFUaXjWQbC9OMwTOwkVUP/3UxTa3vBPs/lDXCz/shcfSCUrOGLF+x1wDHYvAHTyS690gIleIyO3OuQcymczKbDb762w2e1kmkzmrvb39iLa2tgVeCUUJMMuBM27hS0EaATUO1lraPOjs2bN3UNUv1dgCPm71buvu7v5FBOQyh70aOHFHaCjA3afCqijhvgUYomqGHlipcJ8DScMrlsOrxqjnCghr3H4UBMHtkeA6sn4dHR3t3d3df/IzH0YjXhR4R1tb23wmZohI1Hn43tEOAu8C16fT6fpKLxTFOgW4wPvSmtAHDBrDSvJbToa7loAsqj2npjdC8GbQ86Ff4PJ0suxkJDlrdnA6oGd4byWfzz/gnFsuIgFQb4x5voi8wRhzprX2K8AvjDH3FQqFh7PZ7H3ZbPZXmUxmeSaT+X+ZTOa97e3tr81kMi9oa2ub62WHcQtfCtIg5o5r7Kdaq+caGhr+z1rbUaOGc4QUM+ajo7Hgl8IOwPG+Y/MvpESgkCpl75ZBcTn8NAX7+WPpfODPVdRzqYhcAPwlRqTsUCwWlxC2ortCRL5agUkUoGitbQyC4Azgw4zkEhNlyp1zD6hqL+GI6konXp21Nt7jU+PuxDJwV8ILU3BkwgJq8f7LlzwLPW7XaykEy0Lm+oZe+JiF2UmRQhqWN6nASTfAFxfBxoPB3hYSbpcbYxYbY6IpT3hGO05QzBGROcA+PhwZZphFpAA8vWHDhg2ZTGYt8ISIdPuZBz3Ak8ATqvqUMWajtXaziPQ75wY6OzsLjHhtz/BoYiFNMZPJvFJEzvQzG2sBXmCMsc657+RyuTvKWb0Yjt7XBO2bwpYiPy31Ire4EQvB+nq0lxi40/c8Cxy8+BRYuTBsAhuM4UN/yxjzXi+8NkDgnHtxKpX6bxAEq4wxmQqdf6MFe0pV98zn809WQYyMh1Ymk8ncbYx5cZkTLwJjACzI5XIPUeKyrQC7CIKr4KstcEJfeBKnkrB6DWD6Q/fkwKUx92S81xJI+U3wxWa4oDehz+p3UDADbC98cDFc6t8rADSbzV4gIvs753byM8xnisgMoBFoAOo80MqRH5T7W/T/EUi9h4KqOlV92k/IWg+s850U8qraJSKrgTUDAwOPrl+/fhNg5s+fX1coFO4Wkb1rjPUi69oL7FNhYrFoyJSl6+GeFthzM9yTh/2XhgeWlrV8N3pJ2VL4Vwb+XQf71UGqL7RExy0sTy9vsXFF5KPOubcALYT9WupU9dLOzs7XZzKZr4jI5yv0xBDC7mCzgiA4MzxASFFD64cq3Y2iqt4pIuXAFzX2tc65ljKb2SwCdz3sHMC7khZQ29BSXRhr2ee2HiOIhSv64UwJdaeJWD/jJWcOzroUrj4bhpb5Nczlcl+KP3b//feve+yxxxqMMc0NDQ3NQ0NDjUBzKpVqDIKgUUQaRCQtIvXOuZSq2hJr5UQkcM4VjTEFVR0yxgyp6qCqDgD9QRAMpNPp6L8HC4XC4Ny5c4dWrlxZjK1jCigODg5emEql9vZWz9Zo9VLOuU/75kjPsHp+DmPxaljYAHv5N/6xP0i32M+pMu6KXRY+eUU97NcLxRQccz383yJYtaQ8+xbdaNvV1dXZ1ta2LJVKXeTCK7DWHtba2vom4DLn3EeAHSvEddZbxTOz2exluVxuPcmSBeHGMeavwEmjHSLGmJllvAMDFAfhjBnQlKAlcWkwvbBqEG7SMD+31frJKBG+CFZfDTc2w7F9yX1mMxR2uN7dwNEC34ssLVtOtNK77rqrEIbIbNqWKYR169Y94+DNZDKHG2M+6D2zWtYhEJFUEAT/zufzl4wSFrk/QOpB+IiCDoQG7cZyxGXFZklFWNEPBQWph/oh+H+MXc3sCIdSfiUIgn+KSDRgU621V+bz+T7n3MWxUqRnBvOqgbV2DnAeyes9Q0Y3CP4+SkJV/WO2mCcRCagvgtkGThxItgN1NKLrK+fA4NJkhnHGySGpg4uHRqq0k1xQVThPt3S/ghLmMs5GRgyljf2kxvFjy7CeldIUUbnQPBG5YRz7SmOs/Kn+IHlGSOQPH/cwLGyEF3of9Y7TYGU5o2XKnZZLwJwJq4pwW2Mocyqm4D3L4QULwS2sfAOjD1N0zp0WWTdVDYwxu2QymU93d3d/zjm3wbOirgLz6YCzdt555ywjDYsSYzx7enoeLBl7VkocYYyZW+oRANoCxzfDTkl2oLZh7NQj8I2IKUsKHDeGKhw5Ee4pwG+8ciaxLmeDoaj8wOXwulEkZ3E2MmIog9hPcRw/QRnW05VhPSPAq7X2G55zqJXdjEiWL+dyub968Adlwia3PGy78clC2P9GFL5ZCWumsksPwPV+d7r6cNDHMglbJoz6QQHb09PzN+fcJdGsA+dcYIz5f7vssst8Vf3kKK0Fo7qqGUEQLCXZxrpRjFZgpMmTq5ByaIt/pqWh1WtUODPhPpmuwXegXgwbl3rlTJLWaZ8RRcWFnk1NLIGtXiYVjZW+f/IN14zczU8bYw4v6bpe1f3x7ub96XT6ExVyeizxuV/guBZ4QQD0w4ZG+GHEPlcFvuiBAfy0D3JpSPdDMQ3vvApeumhELDqq+2mt/UQQBA9G7idgCoXCd/P5/FXOudVeEVO21s9bv+Pb29v3I1l3Kao//F05xjd2ZUqCaG2Chc2w61DyAupNQ3A1E1QtsCi0fuZk+EM//CPJLmexsdJvuAZePMl6fKaAYltb2zuMMZ8YR5wXWdGiqn5g9erVZbvfRS735SHJ+MlBr1ICfnQcPLmiwoFqKiyoLoHUmbAZ+JaXegc27MD0BUZnPYc/nNd9nsRIh+uitfalmUzmLOCsUQptI9Yx5Zy7KOEbEs2euDXWAFhL4k5EZNc427YwXMDzihPQizOAb58FuRWVyaxEeCYJ47OLTcJdzjT0jIzzkrPJZPGy2eyLrbVfp0wrv2rdTVX9f93d3XdWcDe50d+3FHywGXYugBZCJviaMRjj0TepwnX9MASkB6DYBIdcBUffOLb1Cwhnof85CILPl7ifXwIeD4LgllFK9q0nXw7NZrOLErR+0eyJx0XkzjKuZ1zaxELvTrwODm+E/RLsxamEVqNgfC/OiXTZot4rBbipD1ZNkORs4XUwfxJ0OTNAsNNOO2WAm4Hmaoqoy6UVgiD4mU+dlE17LQGzMNRwtlu4oD9s82iH4K+nwd99eiqoCXxR8HwaPBzAz70ZdcXQVfrSRdB4/9jxWODZz0865/4Rcz9TwHWq+mlfbFvRq9HwusiPoE4q/ou0iD8vI7I23iJfDjDL/03ggnIux9ZYvaYQDD9ZDA8snFirB17adE7YKuSydLKCa3GhFW8MQj3w9uxyZgBtbW1tTqfTPxGRXWqctRDFedaHRh8YLRzYJ0wLKfC5BtihGBJoImFFyqgYq/YDXeKhmxoMm+ns3ggf8syorcZnBt6vqpu9RSsaY/YHjlbVr4wycteoqrPWdtTX1392nK5DRavunPtZSaI1EBEJguDfuVzuZ0sgdQ0UroSX18HBSQuoC6G1uNBb2Am/lnrr1wff6IW1qXC+Q1IAtAPha51wLcxeun26nEXvZ621PzDGHKCqtRIs0ZyGoSAIjsnlck9SwUuI1E7L4VX18L5+KNSHgvZH6+HmKD01LvBFgfqp8MdBuL0hVGBoPwRp+Ohy2H2Zf8xY5Esul3vQOXeGiQY9OFe01p4jIjnn3ANjpB4CY8zpmUzm1WyZxN0a8ElPT8/9wD1xwbfvtX8h4Yw94xfp/CTFyZGUbAhuOwXuGM01SXhn6lKw58JTwHUNCSXz/WtLECbd5zg4XrZ9l7Mov+cymcy3jTFvHAfBMhznAYt7enr+VinOi4C+JGzTeJkJrb96j+Ly42Fg6Rj52jEtX4ym/qJvoioBkIYmhcuoro14AKS6u7u/4Zy7xsd5kVX8KHCzqhaqWNhrOzo6GsdgKWsJyDUae6aqgYiYIAj+W19ff6PXuRaug71S8Na+ZKVk0YCTrRZQj/fgEbiqD3olwYQ+4YGiCmfeAA1Lt91Y6Tjwvm6tXTRO4BW8fOzzuVzua4wib1zirV4rnNMCL+6HQiq0emsH4IZq8rVjgi+yfjvCz/rCmQ5GgL7wlDtiObynitTDcPzX1NR0tnPuTq/5LIrIXD9g89bRUg+efNnLOff5hMiXiPX8oXOuICLWW8BLV69ePbDJ914M4IMNoRA4qV6cQT1IP9wzE36t4ysb2hrixa0Acwp0Ovhe0oM1h8KwZNcivHMbjZU2MeDdYK09diuAVxcEwfdyudzHRrF4UWVL8FXYLQ3L+n0/lobQ+l1xLjy1tIp8bVUx3z5+gwh8JqKpfS9HJ3DJlTDv/pGJm6P60qtWrRoMgmCRqj4pIikf/+2rqjs553KjzHewzrmiiJzd1tZ2RALupwNMV1fXw6p6mzHGBEGQGxgY+NoSML+CoeWQkdCXT1RAnQrd94sXQbB0++XExMElA8m48VuYoCA8tM5bMgG63DL71wFks9lvW2s/4Am8WoFX9MD7fT6fP5aRRkg6GqlTgKvT0ByEJEuqD55sgiu0yhClKvBF1m8W/KgP7qn3zyuANobNYi9bVl3i2RGqX/7rnHv3MCrDzsv/493A0eY2hNXBxnx13rx5rWx9sjtqLfFV33vx6g0bNmxcH1o6BU5rghaXnPvk0mD64LFNcGPSUrJqL++pmNPhvgL8snFkvHUixIuXnP1PO7x+ArucWcDNnz+/IZvN/sgY8x5v8erGAbyUc+7uxsbGt8fWQStYvdQyKF4Fi1vg9X1+bzSE4dhXjoMnl46oXbYefCXWb6m3fipe99kMi66E9yyDYhXNVKP832+dc+fE83wi0j7GZ4oa7WZSqdTXYpT2eIERANTV1f2qUCg8JCJfB2Q2FJbDTOCUgYSlZJ64ufx86F86AVKycViqC4Ma90IVrrV6CzhRkrMUEGQymZ0KhcKvjTFvHaerGQHvP8Vi8chHH310I6NYLe9uFpfD7mn40oDfP6mwImWtwmW1HKimltNyCZjFcHMf/LURrIZ0sh0KN9XlV8DOVbCf+NMllc/nL3POXWaMqWNEKT7Wc62v63pjNpv95Fa6nwqwevXqp5xz78jn82silYnAsc3QWkxISubb7tleeNLADWwnq1eOyR6Av9YnLLj2krNDr4X9E5acRZKxvUXkj8aY12wN8FT1IRF5w9q1a3sYvYZSCFMzAlyfghmRifTa3M+fDhtqOVBr2lSeldM6+KgboZikEFKss1LhpqrWGgVAKpfLnR0EwU88AKt1faL4b1k2m30zCdSo+VbfshDcpVDv4OyhBHtxSpheEOC6k2H9kklg9RhJpVxkkmclXT1IcaQ0LIlwcrgmz1r7JxHZeyst3gOqelhXV1cnFQTTcXbTu5ufaIbX9ENRwj5Hphce2QxXLwFTy4Fqaj0tV4A9Kcz73dTkrZ/v51hsgUOvhE9493Osk05jMdu7nXN/8y5osYYb4YBvZbPZvRIgYEwEiAY4ugn2GEq+F2dfHVzBJGm3Hhv39ZM+eLB+AiRnKXj7V2G3rZScRemQoL29/YPGmF8Cc7xyZbzAu2dwcPDQShXp8ct3qyteCa9ugKV9fs9raIhE4ePnQ39M7ZI8+GL+uyh8ZBAG7EiDIdsbnu6fugoOWQbFKlwNB5DP5/uCIDjKuwDVjmcSVVURmQncNGvWrJlbScA4fAc3B+e7iRFQf+8EeHzFxEvJqj4UloajpQsCl9YlLDnz3dgainAW44+dU0AwZ86cGdls9hsi8mUvORyP2inK4/0ZOPTJJ5/MVWHxzEJwl8GcOvhW5HoquEawm+HPp8L3I7VLzW5HjaelWwHmNHi4CF9uDNXszi+2+LFW374WWqs87SIGdG2hUDjCN72xVQIwkqrt3djYuILa+zeWnm7uajisEQ5IUECNhO0AAwdfZoIF1LVeS731s/CtXsgnPVbad3c77lKYW+NgzagyvdjW1nZgfX39X4wx7/duplB7JXrRGFPnnLtZVQ/3srGx9pngq0HS8PUG2GXQF3d7ethJWMnBjeNYn3FZiYUeVEX4bC+sjrkrZij09bMOvqM+TtTq4j+7du3aR4vF4hGE7eKqBWDKEzBvyGQy1zGSgK8JgPfHBNTelCfWi7MhXKufnw73LUmgK1nCbKcuDUOJTcA1SY+VdqGAfFZDOJuuWslZJMB32Wz2PGPMn0Rk31h8V8u9dfhBMkEQXJHL5d6Wz+f7qGJ09x9G4rylzfCmPiia0N0sNodE4zWnwp0rfNe/bQI+8ZKyM2Gzg3NTMXfFF4cWW+B1V/tE8q3VLXgApNauXXtvEARHqOpTo+g9ywGwYK09PpvNfr7W+M9bPb0S9k/DoUkKqL3mEeMF1PtMzuEhEX+2vBc2mYQlZ3502mnR7A8dPY8rhHV4e2az2V8ZYy4C6r2bWbNOU0SMiJhisXhePp8/M/Yeo+6rJZB6bQi8oxthSazxVJSr7U7BxyO3dNxs13ipal9ydFMv/LjZky9+w6U2hwD84JVw0muh+IfqFq5IqAG9U0SOUNWNXvFSzalS5y3gRzKZzEf8a9WScFUD5yfsdgUN4eb7yynwp20loB5vKLEY8g6+3Ziw5KwQDtbcReGYCtZPYtZO29vbzwb+Hmv7MJ54segF0uuCIDiyu7v7yzHiRqs4jIvLYd80fKMYcgHR+7s6MAGcdzKsr5VkSQR8kavm44WzBuCpuAX0/n7QAFddAa99bXUJ+GEAdnV13QHELWBVMaCvlvh8JpM5mzB3WDfGCWcWhY1vdk/B25OWkvkA9MIk1nsir4hIM3DpQLhuiVk/CVMOqnDuCrBl6HgFiu3t7S/PZrO3icilwExf7jUeNzPwObzbh4aGXtHd3f1LRrSaWsV+CC6FuRZuMtDiuxcY70KneuFnp8F3x0OyJAa+ZeBu9CLdInzIi66DmL8vCrYebrwyHLZZrDLZWiTMAf7VOfd6YF2VABRGSpAuzWazp48FwH1G2NqzG6BeE5SS1Yfuycoc/MzXdhUnK/iWha0yzGJ4oAA/TVpwPRj2wNl3A7xRRpLuAkhbW9v8bDZ7mar+RURe40E3nkMwcjOtc+6Srq6u165bt+4R/zpjrr2OlAmlG+CHadh9wKcVvMWTQdiYhtM1AeJsq0/imPv51c3wi6ZwWGQEQFMIe1vMqYOfXgpzF1WngNnCBS0UCoeqaqcHYLEKABpfInSF7xdTKHeCRlbvWmgVOC5Jq6e+dZzAl5dBcekUmOK6cGRTXFRI3lJHHlFcchaOIxc5zFp7JoQ633EQZspIv5Wcc+7tuVzuXML2J9WGLbLUM97t8PVmeHVEsMQP0wJ88AR4/MYE0kWJLG7kfmqohXwyXnjqk8tBPTy/EX76JWheOnYFxBYAXLt27b2FQuEQ4IEqE/HDALTWfiWTyXzYP6dUeWMIFfgnN8HMJAXUdaHyobMRvqvbWUpWy0HqJYS3D8IfG8KcVtKSs4OXw8uWhXsgulffDYLgMZFxDdIt+vFyVlVvHBwcPDCfz98UO2yrAsiSkU7tlzTDuzaHCpaU92Mjd/Om0+BrSyCVROyeCPgi9/M06CrCqaWkRcSANsHLZsIPIitQAwDtunXrHikUCoeo6l9rAaBvV/+FbDb7mZjPLxEgfLu30wYTFFD7bl6icOWx0Lt0ckjJqrpixdMXTcDLO1/pfR4hYx6NFutT1WtG6WZXKbZzPrbLFYvFY7u6uhbFEufFamPWP4wMlPnfFjgnDryI3RwIc6CLkyyTMgmfmqnT4Ae9cE1zWF5fjCEhtTkE4Bvb4TvLRrqjVXPaRXnAHufcYc65m2IA1CoAWDTG/L9sNnvdnDlzZgCyGFISyoPe2wzZQsIC6j7YkIbrGLF6MhXAt8inAnLwiz64P2nJWV+4Pm+7Cp7vRRgQqpWuC4LgqSqIHo3FdiYIguuHhoYO6O7u/mbMXa3aKi2HuteGFu+DTfCpvpJZE+IbIhXg+BNh3T4J5mkTZd+W+vivAc7pg383hAAM4gDshUIzLLwWvr4M3NLqkvARAE0+n+/L5XJvd859JdaOwlVDwgAn1NfX7wi4TNj4ps7BB4sJC6gbQ7LpayfCuhVeIRHbUKnJzHr6+2iXhfHOJamJkZylBc6OWT/T3d29TkS+4ed4BBVAF3cx/66qh+Xz+ROfeOKJPCNqFa0FeIuhcDWc2ghf7oeii8WbGnZrSPXB506HXyflbk4I+AT0ftDjYSCAdxeht8zNq9sMhSY49hq4vkYARslgk8vlzgmC4GwJr7GC6igYvyqXyz3+Rqj3p9dRzfCCweQF1AMm7G8TZ8RMzI2OvkeKratHnCjwBQrSCN/thc66CRBcG3h/JEE82LOexpjLnHODJaRX1P1O/GG7xjl3Wi6XOyiXy90yHmsXuZqLw850pzTAVV7+Z6NDOBbn/eG0MJmeSjpuT/wE9u0EU6fBygKcnI6lH+IA3BRKdI6/Fm6IzHiVMWBkRaJ6wCMYSUUUKzze+j4tlwL4mfM4+NBECKiL8INT4L9eQB0N5Pxee3v73dls9vSdd95599imcjFafVKAMZKcHQu9Bq6aIMnZzABOBvQQvxc7OztXqeqPvfUrxEEnIk8GQbDMWvviXC53NSMywpqsXQQ872qe2gzLh0LgGRmxeC4dVuTnFd7rb4ZLOm6fEPdnmVe0nAbf7YMLW8JNVSi5CVEM+IFr4TtLvS9dAwCjgtxfDw0NHaSqf4tVxWuJ1RNVvSmXyz20ENK3hbKhQxrg5UkLqIdCNcTFgNw4Yq0NcJeq7pZKpa5wzq3KZrO3ZjKZj7W3t79sjz32qGdkWk8ERsPIKKxtCUgBzEpPTBXhuj7Y6DWNiUrOBE69HFqWQhBZP+fcxb5apc7fz/XOuS+IyH75fH7pmjVrNjBChtRqiSSSjS2HcxpHLF4ceGp9XFmAYxZDfqKqUCYs9nitj/9OhQs2wS+boE6faZlSm0IAvrsDbloCDTX2/IiY0FV1dXWHOOeWewsYd0OML0H5Eox0oDbwITsCjiQYzqgX529Oh38uCcEXHQSaz+e/0Nvbu2sQBOeo6iPW2oNTqdRngTt6e3v/nc1mv5HJZE5ub2/fb/78+Q3+c0WjsFzsQCmdZ1dpPl2ln9L5eKWvo4TsdbAE7Olhe4SvNybY4xOf/22G9jS8W0asn/T09PzdOfcn4Ann3FJjzItyudxHOzs7u2Lpg+I47o94EBWvhk80wiWlwIvF7HYAzjw9lASmJkoSOKGnqa/s1WtgB4G/pmHvmGIgvjDFFkj1w21Pw9vPDyu9UzUoQuJdrI4HLvUjxgaNMWlV/W0ulzv8FKi7BgpXheOu7/IKnCTTC6YAh54Cvy8jPRpW6HR0dDQGQXC0iJwsIocYY7aYMQ6sAf4jIncTNvV9wFr7+OrVq5+aaLO3YMGC9NNPP73LwMBA72ufeGLtjaEIYXfgfhcqhZLaMy4dKkb+sxfsd8jIvEPX2tq6q6r2+9YO0do5xml5o30o4V68uAnO7Q3jWlNCtBVawpDo0lPhg5F7OpEuxoRe0Sa8Cp5fB38VmFMI/WdTCsAmSA3BvUPwttPh0RoBGJ3qQWtr6wuttdeJyMsAVPWwXC53y0JI3whDV4cKhsRGJEdWbwD+sRhevrQyHT3cCiH6RTabPQg4FjhKRDJbPDhs5osf8vGEqj4uIo95cK4BciKyVlU3FAqFpxsaGvqDIBgcGBgo1NXVBXV1dS4IAikWi6axsbFuYGAgbYxpUNUWY8wsYI6IZFS1Q0TmA7sCWRHZxTn3q3w+/5bYgfW9FjgmwbHSaBj72QF42ylwc5kDqyo9ZjX77xSoOxBuaIL3bi7zHSID0Ac/OQXe6p/nmMD87DaJI6IFuBJeXQ+/U0gVQzdGShegAVIB5ArwzlPhrzUCMLphRaAuk8l8GfiffD7/qoVgbgynycxPwUqFBk1oDaJN1AvHnAYrqvjMErPWCtDa2jrPWvtm4BgReZWINMWAFwBWRCgVgZQ8ZkBVB0Wk4FssDLuqvkNAWlUbRCQdvU789fzrRP8OBkGwd3dPz2MCuhwOTMHfismKEYLGkP3806nwmtjoZEMV1QdVWLzUMiheCDvtCN9vhNdt2jKBHsUdQXN4CNy5EQ7ZHHaW04kWRmyTfFOUgD8d/jQI70uBMSExoaUkjHdLs3Vwy3J4VyTGrqECOpKRFfL5/JnFYvFwQBeMCKjPbITGpHtx9sJD3fDjKgXUGjvRLb6SP5fLXZ/L5Q4Xkf2CIDjbOfc7YLMxxvoRFzjnikEQDPifOMgs0Cwis0Wk1RiTNca0+582YCdgBxFJe4A5VQ2cc8XoR1UD7/YWjDH11tr3CugpYT7sHwX4w0RIztLw6qvglbF43yUFvMtg31nw53QF4EUHwFDYBOmoC6A3YnwnGhfbLNkbMaCnw40DcFoDWBP63aUAtEPgHDTWw3evgSW+X2gt7eeG84Hr1q3bHLX3/jrMMXB80gJqr2W9dBkMLR2HEp+Rg8BGlHs+n78sn8+/HlhQLBbf75z7pqo+CqSstQ3W2gbf8S3arIWIno9AFPuJz0SP5x0rkTfWW9RjFyxYkD5sRKd74QR4TM53KD4/ofshC0fq8d7WBH8ysFdfBeClwQbQ0w9Hnhcym3ZbdRrYpkqLqKbvVLh6M3ysKZR4BeUo+wB0MHTnll4LP/gy7BhZ0OrvwwgICacrndQMs4OR4H6rN04KzGboHgqb62yNgFpjzGaUZjC5XO7x7u7ub+VyuWObmpoWqOr+zrkznXPfVtX/eDfTGmPqjDF1IpLyjK8ped0g9vrx/y73o6paMMbsvmHDhoMXhamA1Cz4TX/YsTzJciPbFx5gb74C9t6aLmfR+OUbIbgGPpGGmxRmDob3uxR4ri70qJ7qgyPPgoe2tj5vUsZ8lVyCq2FZC3yyd5Qg3vfLSA3CyiE49nS4awXYhdUnPUWBa6AR+E8Kdk4wbik2h/nKpafCsnHEp9UekCYGoi3+Nm/evF1TqdQCVX2RiOwDPF9VdxaRnTwQn7mmWp1HZYyhWCzems/nD/XfbWg5HNcEX+stw1pv7Tr2wtWL4bTxgCBiJi+DOY1wTQO8vdd3oyvDLTiv2tncC288G/4yQfdu8oEvDsDl8Jlm+H+9UNSYvKcUgPVhnWC/g3NPhuVxIqfK9zmhOaw5TGTT+GQsCpuGYK8zoUcnPlaI5+q0kvWZO3duS0NDQ2uhUGg3xmSAdlVtA+aKyI6qugPQDNQDkaUksnjAoIj0qeomEckHQXBeT09PLyAXQUMz/KcOdknwEFP/hTYPwgvOgny1jaYiK7ks7EbwqhTckIY9esu4mSXA6+2DN58Ft24P4JEUZTzOGDBYEurrPn41aAt8vM8LW0sBKH4iroHGRrj6Wnj103D2opF8YEU62ruBKYVzC36GQEIoCBpDkcA3z4TuJaELHVfET4T7omwpJC9NoCvg1q1btxnYDDxS4yE8VosFez70XwNX1MMXi17snsRyutD6zXCwOHwrxmyeFQfNNfARC//nxfuVgBfUhftrUz+85Sy4bXsBb5vHfKVrsWxEBfOJXljSGG5gV07GJGEPDfWNed+7I/xtObzBL1xZMsYDQrNwZCO8cDC5sdJKSJEPAZeypfYxTqDU2n9kPJ8jiuGKMQZVKhAqleRqpbR+/Pm25CCTQbi+F9bbiZGcnXIp7LB0FDZ6Sci4Gt9Ferfr4FdN8PmiJ+vKAc95cgXYsBmOOGM7A297gw9AfYCdWgyf6oXzPQtatkxIQv/d+pNtjzr49bVw0XJoitpZlKQkoprBDyX8uYOm8LS+6TR42MuWAMhms4dmMpk3MKI/1dgm3lZufiko4z9BGSq/tNmwlhAz0YN0Cdiz4EnghoaJkZy1peF9lQZresA4AXcdnFAPf0/D4T5xjpTZ0wrFRrAOujfD67dXjDdpYr5KLsSV4YJep6God7T4zBEGLmYwnDP3wVPhlui19gmBHVwFr6yHPxeSKxuKWE4pwssWh01TzSIf/2QymZXW2uc75/4iIt8sFAo/jsmkiFmSCVVPTOB9MstCmdauwErCplNJ7SVXFw5dfSgPL1oatrEn8mwiku3KcCLsxWl462B4OlTcJzHl1MOb4C3nwoOTAXiTwfLFY8CiT8RfX4C3CvSmw9MqGI0F3BwWfb4wDb+7Fq5YDjstg+IG/90ULkjFwJqASYkE1L9fDP9YEs4tFMLuym80xjzfT1B6pYhcXVdXd382m/16e3v7kZlMpilmTUrLiKbEFRsr/d8AftA4AWOlm2CvNjjKK2tSEbEmYWx3Vj3cmYa39kEQjFKVEknGhuCOp+Hgc+HBqCfnZFhLM8lubJQH/GkvvE7hcd+MtziK6U4NghsKp+SebuHua+G4xaEe8fn18KaBEHhJkUviUfOl2Bo6TxWeG1H7quqcc4GqzjHGHAv8XETuy2QyV2QymcPnzp3bwpZlRML2KSEa9zrUwcVDyXoU8VPyPN/MqbAo7Dpw0HXwx0b4ioNZ0aSgCuy4AsUZoVj/pg1wWJRAn0xNiyflDY6lB3axsKIBXuab2owaNykU6yBVH1J9NxNWYx/VX0bIPd5Yrz4UUP8rDwf4A0OAIJvNvhi4q8yhNpzs931HUFWcc4+LyK3Oud+o6p97enoeK/N+NsZiKgnoHbdin8SHkxQjHebVIdlxeF+yeT9XH0r2XungwUb4rMBJFkx/+D6mkkhCQ1ZcGkH64aJTfLy/ZPJMhprc4IORHN4SaGqHa5vgPX2h7IzRgORPPfXTkxhM8Ev6nh62H953CnzbHxLqXc4fGmOOds4NAOkK1iBSkJgIiABBEPSLyL9V9c/An51z/6oAxmF3uwJTqSW/r+X+xwmXOPESjHZ/lsNh9fDbweRjalOA/wAzZkDHZr/+owFcoZj2hdtDcOapcE28nGjSuQ5TILh3AMvho3XwOQWGIDBjnLI6IiFLbEN4MuC/9bDPB2AwWrxMJtMoIjeJyOtFRGKVBvFxVlIBiEKsYsFbxQEReZiwlu9u59x9zrmHZ8yYkV+1atVgjdaqEhta9WacP3/+jkEQ7BwEwQtVNevnHrhoY18N/2iElySYykH9CVbD/S42Q6oAqwfg/VEh7LKtLEl6zoLPL6rc6PvnXw1vrIPr6yDTV4UbmvAVScnOPRUuKceYtbe37+ecOxp4q4i8OF4kG7Mg5Q4EjbGfW4DRx4845wZFJA88pqqPish/RWSNcy5vjOlxzj2VTqefrqur668BoDaTydSranMqlZpZKBRmW2vbgJ1VdT6wu4jsCuwMzI0qK4IgeE0+n//TWVB/GQwuh/c0wbcTlpzFSbLRPB0nnvXuh19vguPPCxUyqcncnn9KgK80DrwEdmmB6xrg9b1hp2yVCSaOfOt3AngiDXseDxvHkJJJW1vb/saYNwFvBF5ijIlKefBVBgHPVKiUWqb45jOVavD8z4CIbCYsiekF+lV1MDQcw6e/EZGUqtYTSsuaCJsGN4nIjEhmVu71/WfpF5GUc+7mfD5/zEKwK8D9EtJrYGUanldIsN6vivtSrAuFFBThU6eEyhgmG7Ey5cFXuqjXwictLPFTX8vKiZK2er3w2cW+jVyFU3V4mmr8l9lsdk9VPdgY83rn3MuNMTvHrVrMMmoVgCx1GYdjwPF1W99CaK1A4A+HYQlbVHwbvb5zrk9E9urq6uqMKt2vhg+2wJd7E6x0HyOud81hh7HHAli8GH4T13lOhf08pcAXxYFRAL0cDk6Fre32rqRgT+JGewF1XwB7nQa5KkS/cXZwi5ijtbW1OZVK7auqBwGvBF4M7Gq8T1dSTR53RyuRIuXCpUqEiz4Tdxq3piZyeeNgds454FFVvVNVb02lUn9paGh4eNWqVUPRC14FO1p4yMIcH+hOyN5yXp+ZDk36d3rhg+fAuqngZk558JW6oUtghw74bArO8MG5Jnzjiy2QehpuOA1OGOdNrlgWtGDBgvT69et3N8a8CPgfYD9V3QNoN8Y0lmvzUPrfozCe8Xs87ArGX7OMi1lU1TzwsGdg71TVu7u7u1dR0v6x9F4sh8+1wEc3T5z106aQ9FpbhA8thm9OJTfzWQO+0kX3ZMyXgb2SLHXx5qv3adgzCuSjQ3ic7k2c/axE5aey2WwG2Nk5t5sxZjdVnS8i7araKiKzfVlQU7wfSxWupQMGgE1+6u9aD7TVIvKoqj5ijPmviHR2dnb2lyNoGBGRu/h9mAvyAHRYuE+gySW/v5wNX+/GXjj/HOissa5zGnwTwYZe41t/XwU/84Prk2Ldojqzp4D/A352CjxUeurvA7oVm6A0gb3Fxi537bHHHvW9vb0znHMtQEtdXV1TsVhsEJEG51ydtdYA6oeEDnnipU9ENltrN/f29m5ev3795jHex5R8prh1lSWxJlDxQyjpznCR99EYqlW+tBg+PJWt3bMKfFGLt6vh5fVw+0TInQxhGXwfDBm4Hfgp8JuT4L6Sg8AsBbOVYGQU0mVMYG6FFR6N1BkGWyRYj7/INdBh4LUO3ga8GtgpQbF1pKe1ffDHneB1EDblmup799kCvuAqWNECC/smLt4oipeu2RCITuCfwO8EfmvhruNDC7kFORRt2PvD+QdJKS2kwr9j7OGqSBlZArJPOORFyoFtCaQ7YF8JAfcG4OUNMANG8hoTwbU0hLm8w06FW6Yt3yRgPn15y/MF7nUjs9cn6nupjli0VJrwDX3bsG7gHwp/tPCXAFYuho3lPnNkmUtAWQkME+auL42BLPo85Tb0Ckg/DXsCL1U42MFBBvZo9EDzgBseBT4R6x/rjfrL0+DIyajVfE4SLlfBlTPgtG2RYyrDMDrAWDCRoHMQKEKPwL3AP4C7A1hp4LHF0DfaYRIHQwSI6L/vrwGc0YTZ+8vI2kbbtCvAPg0dDl6g8BIJBeT7KezW5F8r6lFI2HdHGEXonPSap8LPvv+J8G/fCDmYBt92snrLoQ140ECLl4xsl+8UJX4ltI42FZbcDDci6Qv/3iWwilAw/ICBh4qwJgXdJ8OGbWn5roMZAnOLoXRsd4G9FPYG9hTYJQ2NKUamtURgK0PGbMur2BS2dP/6YvjAVHc9p3yer5r2g5MAjCIhIIcL9qIcw2D49w0Ca4E8ofuaU1gn4c8GB09b2OSgPwi9vIINY9CoTYZxIRjqbDj1tcFBi4YDanZUmCswF8gArbF/59RBXTT9JAKa733h2FK4IJNgv6j/EAMCe58Ea5YkOKZ5W1+pqfihvasTzA431ykDCesJNYH4RUY6UEcvoEXQwpakiwFMCmZbmG3gBaXU4xadbMMXdN7dizeaEok1PBIfi9oKVGa8Y24BXGEExHGgGe9ObvUhlKA3Ir4tROMmOIMw7TBml7NpyzcxVu+MFrh8c4JqegWtB7GE2Wgdmf0wUW6WRiJtLcOGRoCI/pUyN0+fGYhq6etFotGS15uoPRARU2J81zmSSztEIvf1BvY8GTZsg36pE3LZqXhg3Aq6D6T74RvA7ATVFM73Z/lBEe628PwmqJewWZLKlmVBiX2fyNrIlkMuI8tj2FKzOrzJKnRgKvt6Uv71JGnAEQoTTGNIQkkR+iQszUvKWogvam4ZgnU/C/OuqdumoPUzU+0DL/H9+NfD0U3w/KSS6pF7VID+IThnMbw/gH374SMB3JUCaYZUXdgzsnSe+rb2ViJwlcZj29ST0RBwAWH8KY1gW8L701uAnw7AOxwcqLDZjMTBiezbofC9z7gBGpYmN3FqGnxjWScNT7/zXfIdqKUIK84KKxfSi+GRk+GLJ8EBCi8bgC8GsLLOAzE9ElIVtczEpWfhFYWhRYXAesD5gTeDg3DrAJytsO+JcNSp8KPTYKWD7zT6NU4QfK4ZnjcI76zU43M65kvwiqjl6+DQFPwu4b4hakNgv+RkuHchmAWeyIlXMSyB1Hx4qYM3u7BQ9kWNYYc1hkJzqBICcTKxhFsDtnhtX6rOkzkaxsQbTTht+GcOfn1ymEaJ1skAqaVQuA5eIHBPkGAH79g04Hgzqynlek4ptjNKMhfhgvSIq5jIjfTqiV+dFiZvbSx5O0znLx0B4u3+5/99FRYMwWsDOAx4aRqy6XCoSzgsj+F+MjqZAVlK0mg4wNTUgaT8AdcfMqMPBvAnhd8q/OWkMD0yTA4t9eyjB8LQynAt/3MV/LwZ3tafUEooGqzZAP/TCq8/HX491fJ+UwZ8kYB6ObwkBa/37QATcTUExN+xCwEWAjc+8zHDDY9WgLnfT6A9MezavBK44lLYoQn27YNXAQcp7CcwvzFsgV86UMHFgC0xMmGiWMiyrGqkULEhyIYH+xWBQRgYglUF+IeBPwN/y8F/4hYmJpdzMpIqHL6itTRwUTEUXicZ6kQlX+cDv75/irn9MsXAF1wF324J2wgmlVQP6sN2gH89DQ6qVTMYF0+Xnro3hHPfnx+E8qyXKLwI2IPQOtZFPliEwvgQBRdz98ZLo+uWzKdEKInn/2IWehPwuITqm38J3C1w/0mwuty98MCqqnIjWtOr4E9N8Kr+hHt82vDQOvBkuNu37p8S1m9KWL4l4YK6S2H3FLwj4bHO0dF9UYyEqhp8y0os2I3eKnowDhDqO+8lnFzLDdAwBO1DIVmwB7C7gecBHQqtCrMFWupCa2THm2CMB2ve2hYC2BjAkwXICzxOOEJslcKqNKw+HnooA6YVYL1G1C2rIL6ugthzBi6S0CtIlICrD7vKnQe8d9ryTZDVuxouaYFzEpSSuTTIQKgNfdEpIWWepOsSLzqFsUXN6SdgxxTs6GCOwiwLswKYKaEWsxloIBxOkvJxmcYM2EAYmtEr8HQQEiLrTZiIXl8HGx6Dp8cSVkeHx/3hGLdEumRH8WAmHCu991DC3QYEBg3scyL8d6pIzia95fOuk7sS5hk4rt8LlxMiWrQupK0vWQyFXLgeSTbhiTavKwVkaSmPd+GGCDWeayfak6jw/hNWpLrUDyi5Gi6tg+WD/v2SOOC85KxhM5wJnLfPFEmhTXrLF2vO8/Fm+L8krV4qTKrni+FY595JIFMSDTeqjFISVNO1D+iNwILtVDdYcohyOTSn4ME6yCTVayfWYe4phT0Xw5NTwfpNdssnSyGYGzZ2PW0wQQG1+lihAFedCZtjY523q6GfSHAs276nvC6B1Jmw+Uq4uh4+VfBDTxJ47Wis9Kw+OBH4AlNAcD2pzXMkJUvBe5qhvZCglMyGPUE2OrhGtxzrPH1N3OUI6xyv6QvLpBIfK61w+nJoWjoFJGeTWZIjt4bz1OuArwvslJSAWnxSfQiuOQ1+uA/YM6fBN+HXbX7C7LGw6UjoaIaXDiVk/Qhzta4ZZhVh1QHwryWTXHA9aS1fZPUU3tIEeycoJVMJ83qDwFcIiQedhsa2ufxai4Wv9Ifd4GxSbraf2aAOzl0x7XZutYuCF1AneQWN4Sn5o8XwyIpnQSOeqXTFxko/VISbEx4rbQfD2Ywv2gBvXBaOMUtNg6+Gy8/NdtfBaxrgoMEEpWR4RbwNk+oyDYftF1YYuGgo+alGUWvu8+OH+DT4qrwiXWURLrAJLqCGVs8U4Xcnw11LQJ4NzVen2uUnDsti+Nsg3NYQ1kgmch8iwXUaDlkOL1vm48xp8FVp9W4MBdT7puAILyVLJXRjxGvBLoSR9nrT1/bbe9bfi4S9EJcOc6bnMYnj+cka86nCeQ3hiZXIiaihgFr64c5T4XdLppAA91ka+xUVZBb8qg/urU849usL00lvuwqev8iPsJ4G3yhXJKC+HOYbOKYvQQG1/7Lixb3K1Kzif1ZdS71mV+DLKa/uSSqeJAwx0gpnE/b8kWnwjf15tA7OaIJGTS5R6tJg+mDVANykofRo2uptf+sXVfx/vw/W1NVYUTKGp2P7Q4HG+y+B1slo/SZNIKogh4DuBHMsXO+g0SXUhlzBNYYs59Izp3C3q2fplfoQDB4F9Y3w+qEEJWe+y1mTg40/gz8eAnYy3fdJcxIs9Un1OjihGeYE4U1IxOqlwPSGsxO+4Utbpq3e5LkcYSx+fR9smAjJmcCpl0NLZGmnLV/JQXVr6Jc39oW9OHdwyfU5CZrAFuDLi+FXQOq101Zv0lyR5OxE2PwmaG2GVyQtOWuBmQ4e+yncNZm8nklh+SIp2VNwTAvskqSA2oTM1yYLVzMtoJ6UVyQ5c3B5PwwkLDmTQig5O2dJ2E1t0ng9k8XtdCvABnBecQJ6cQbw7ZMgNy0lm7TEi1sB5nR41MGPEpacmUFwTbBPG7wpKm2aBh8jUrKn4Igm2HcwufSCEqodCnVwCdMC6qlwSQAXT8Rob18oPakkZ9sdfBEgArggtk5JXEFT6HL85CR4cNrqTe4rkpydDncV4JbGiZGcvXo5HOQtrX1Ogy+yelfDK+rhNQMJC6gLDMuXpmVkU+CKEuEOLpoAF8X5YZ/nwzP7sj7nwHfjyMn0Yd+CPKk1d42hr3/LKXDHtIB6Slk/0wO/7YM7G5KtyUv1h6mso66BfW707/WcBN8SP097edjH/4j+sPVdNP1nq34Uig6KNoz1pgXUU+uKwoPL/GCVQhJ7wu+LwXTozi6eDMbn/wNh6Dx8OxBgPQAAAABJRU5ErkJggg==" alt="Atlas Home Buyers">
     <div>
       <h1>ATLAS HOME BUYERS</h1>
-      <div class="sub" id="masthead-sub">Deal Analyzer · Wholesale · Novation · Rental</div>
+      <div class="sub" id="masthead-sub">Deal Analyzer · Wholesale · Novation · BRRRR · Rental · Creative</div>
     </div>
    
     <div class="report-actions no-print hidden" id="report-actions">
+      <button class="btn-print" onclick="copyLink()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        Copy Link
+      </button>
       <button class="btn-print" onclick="window.print()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
         Save PDF
@@ -1528,6 +1619,7 @@
       <div class="property-bar-head">
         <span class="property-bar-title">Subject Property</span>
         <span class="property-bar-hint">These inputs apply across every exit strategy.</span>
+        <span class="property-bar-actions"><button type="button" class="link-btn" onclick="copyLink()">Copy link</button><span style="color:var(--ink-4);margin:0 6px;">·</span><button type="button" class="link-btn" onclick="newDeal()">New deal</button></span>
       </div>
       <div class="field-grid-2" style="margin-bottom: 16px;">
         <div>
@@ -1550,7 +1642,7 @@
         </div>
         <div>
           <label class="field-label">Square Feet</label>
-          <input type="number" class="num-input" id="f-sqft" placeholder="1,400">
+          <input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-sqft" placeholder="1,400">
         </div>
         <div>
           <label class="field-label">Year Built</label>
@@ -1560,22 +1652,19 @@
       <div class="field-grid-4" style="margin-bottom: 0; margin-top: 4px;">
         <div>
           <label class="field-label">After Repair Value (ARV)</label>
-          <div class="input-money"><input type="number" class="num-input" id="f-arv" placeholder="250,000"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-arv" placeholder="250,000"></div>
         </div>
         <div>
           <label class="field-label">As-Is Value</label>
-          <div class="input-money"><input type="number" class="num-input" id="f-asIsValue" placeholder="200,000"></div>
-          <div class="field-hint" id="as-is-hint">Drives Novation MAO · doubles as Purchase Price in Rental mode</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-asIsValue" placeholder="200,000"></div>
         </div>
         <div>
           <label class="field-label">Mortgage Balance</label>
-          <div class="input-money"><input type="number" class="num-input" id="f-mortgageBalance" placeholder="0"></div>
-          <div class="field-hint">Seller's payoff at close</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-mortgageBalance" placeholder="0"></div>
         </div>
         <div>
           <label class="field-label">Rent Rate</label>
-          <div class="input-money"><input type="number" class="num-input js-rent-input" id="f-monthlyRent" placeholder="1,500"></div>
-          <div class="field-hint">Market rent · feeds wrap, lease &amp; rental</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input js-rent-input" id="f-monthlyRent" placeholder="1,500"></div>
         </div>
       </div>
     </div>
@@ -1611,7 +1700,7 @@
     </div>
 
     <!-- STEPPER -->
-    <nav class="stepper" id="stepper"></nav>
+    <nav class="stepper" id="stepper" aria-label="Steps"></nav>
 
     <div class="main-grid">
       <div class="card">
@@ -1644,6 +1733,8 @@
   </div>
 </div>
 
+<div class="mobile-bar no-print" id="mobile-bar" hidden><div class="mobile-bar-main"><span class="mobile-bar-label" id="mobile-bar-label"></span><span class="mobile-bar-val" id="mobile-bar-val"></span></div><span class="mobile-bar-badge" id="mobile-bar-badge"></span><button type="button" class="mobile-bar-btn" onclick="document.getElementById('sidebar-main').scrollIntoView({behavior:'smooth', block:'start'})">Details ↓</button></div>
+
 <!-- ============ REPORT VIEW ============ -->
 <div id="report-view" class="hidden">
   <div class="report-container">
@@ -1652,6 +1743,7 @@
         <div style="flex: 1;">
           <div class="section-eyebrow">Subject Property</div>
           <h1 class="property-title" id="rpt-address">Property Address</h1>
+          <div class="property-seller" id="rpt-seller"></div>
           <div class="property-specs">
             <span id="rpt-beds">3 BD</span><span class="spec-divider">·</span>
             <span id="rpt-baths">2 BA</span><span class="spec-divider">·</span>
@@ -1659,9 +1751,10 @@
             <span id="rpt-year">Built 1985</span>
           </div>
         </div>
-        <div>
+        <div class="grade-column">
           <div class="grade-badge lg" id="rpt-grade">A</div>
           <div class="grade-label" id="rpt-grade-label">Deal Grade</div>
+          <div class="grade-label grade-date rpt-date"></div>
         </div>
       </div>
       <div class="key-metrics" id="rpt-key-metrics"></div>
@@ -1688,6 +1781,7 @@
 
       // Purchase (rental)
       purchasePrice: 150000,
+      purchasePriceTouched: false,
       closingCosts: 3500,
 
       // Rehab line items — SEPARATE PER EXIT STRATEGY
@@ -1789,6 +1883,9 @@
       cfActiveExit: 'wrap',          // detail view — must be an included exit
     }
   };
+  // Pristine copy of the form defaults: applyState() coerces restored values against these types,
+  // serializeState() emits only the keys that differ from them (short share links).
+  const FORM_DEFAULTS = JSON.parse(JSON.stringify(state.form));
 
   const STEP_CONFIGS = {
     wholesale: [
@@ -1828,21 +1925,39 @@
   };
 
   // ============ UTILS ============
-  const fmt = (n) => (n === undefined || isNaN(n)) ? "$0" : "$" + Math.round(n).toLocaleString();
-  const fmtPct = (n) => isNaN(n) ? "0.0%" : n.toFixed(1) + "%";
+  const fmt = (n) => {
+    if (n === undefined || n === null || isNaN(n)) return "$0";
+    const r = Math.round(n);
+    if (r === 0) return "$0";
+    return (r < 0 ? "−$" : "$") + Math.abs(r).toLocaleString();
+  };
+  const fmtPct = (n) => {
+    if (n === undefined || n === null || isNaN(n)) return "0.0%";
+    if (n === Infinity) return "∞";
+    if (n === -Infinity) return "−∞";
+    const s = Math.abs(n).toFixed(1);
+    return (n < 0 && s !== "0.0" ? "−" : "") + s + "%";
+  };
+  // Formatted money/number inputs: parse "250,000" -> 250000; render 250000 -> "250,000"
+  const parseNum = v => { if (v == null) return 0; const s = String(v).replace(/[^0-9.\-]/g, ""); const n = parseFloat(s); return isNaN(n) ? 0 : n; };
+  const fmtInput = n => (n == null || n === "" || isNaN(n)) ? "" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  function fmtOnBlur(el) { el.value = el.value.trim() === "" ? "" : fmtInput(parseNum(el.value)); }
 
   // One rent number, mirrored across every visible rent input (property bar + creative + rental + brrrr)
   function syncRentInputs(n, src) {
-    const disp = (n == null || n === 0) ? '' : n;
+    const disp = (n == null || n === 0) ? '' : fmtInput(n);
     document.querySelectorAll('.js-rent-input').forEach(el => { if (el !== src && el !== document.activeElement) el.value = disp; });
   }
 
   // Hook up always-visible property-bar inputs (they persist across modes)
   function bindPropertyBar() {
+    const moneyKeys = ['sqft','arv','asIsValue','mortgageBalance','monthlyRent'];  // formatted text inputs (thousands separators)
     ['address','sellerName','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance','monthlyRent'].forEach(key => {
       const el = document.getElementById('f-' + key);
       if (!el) return;
-      el.value = (state.form[key] == null || (key === 'monthlyRent' && !state.form[key])) ? '' : state.form[key];
+      const isMoney = moneyKeys.includes(key);
+      el.value = (state.form[key] == null || (key === 'monthlyRent' && !state.form[key])) ? '' : (isMoney ? fmtInput(state.form[key]) : state.form[key]);
+      if (isMoney) el.addEventListener('blur', () => fmtOnBlur(el));
       el.addEventListener('input', () => {
           const raw = el.value;
           // For numeric fields: empty string → null (keeps placeholder); number → parseFloat
@@ -1851,27 +1966,58 @@
           } else if (raw === '' || raw == null) {
             state.form[key] = (key === 'monthlyRent') ? 0 : null;
           } else {
-            state.form[key] = parseFloat(raw) || 0;
+            state.form[key] = isMoney ? parseNum(raw) : (parseFloat(raw) || 0);
+            if (key === 'sqft' && state.form[key] < 0) state.form[key] = 0;
           }
           if (key === 'asIsValue' && (state.mode === 'rental' || state.mode === 'brrrr')) {
-            state.form.purchasePrice = state.form.asIsValue;
+            syncPurchasePriceFromAsIs();
           }
           renderSidebar();
+          refreshRefiSummary();  // Refi Math card depends on ARV / As-Is / rent
           if (key === 'sqft') renderStep();
           if (key === 'address') renderStep();
           if (key === 'monthlyRent') syncRentInputs(state.form.monthlyRent, el);
           if (state.mode === 'creative' && (key === 'monthlyRent' || key === 'asIsValue')) renderStep();
-          if (state.mode === 'rental' && state.step === 1) updateRentalEquityCallout();
+          if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
           if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
         });
     });
   }
 
+  // Runtime accessibility: give every field-label's control an aria-label (no template edits needed)
+  function labelInputs(root) {
+    (root || document).querySelectorAll("label.field-label").forEach(lab => {
+      if (lab.htmlFor) return;
+      const box = lab.parentElement;
+      const ctl = box && box.querySelector("input, select");
+      if (ctl && !ctl.getAttribute("aria-label")) {
+        // Direct text nodes only, so decorations like "<span>· auto</span>" stay out of the accessible name
+        let name = Array.from(lab.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join(" ").replace(/\s+/g, " ").trim();
+        if (!name) name = lab.textContent.replace(/\s+/g, " ").trim();
+        ctl.setAttribute("aria-label", name);
+      }
+    });
+  }
+  ['step-content', 'sidebar-main', 'compare-panel-container'].forEach(id => {
+    const target = document.getElementById(id);
+    if (target) new MutationObserver(() => labelInputs(target)).observe(target, { childList: true, subtree: true });
+  });
+  labelInputs(document);
+
+  // Re-render the BRRRR Refinance step's "Refi Math" card in place (it reads ARV, As-Is, rent and the refi inputs)
+  function refreshRefiSummary() {
+    if (state.mode !== 'brrrr' || state.step !== 4) return;
+    const el = document.getElementById('refi-summary');
+    if (el) el.outerHTML = brrrrRefiSummaryHTML();
+  }
+
   function update(key, val) {
     state.form[key] = val;
+    if (key === 'purchasePrice') { state.form.purchasePriceTouched = true; refreshPurchasePriceHint(); }
     renderSidebar();
+    refreshRefiSummary();
     // Step-level live updates
-    if (state.mode === 'rental' && state.step === 1) updateRentalEquityCallout();
+    if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
     if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
     // Full re-renders for inputs that change displayed structure
     if (key === 'allCash') renderStep();
@@ -1882,13 +2028,91 @@
     if (key === 'cfAcqType' || key === 'cfActiveExit' || key === 'cfPlOn' || key === 'cfPlInterestOnly' || key === 'cfSfInterestOnly') renderStep();
   }
 
+  // Purchase Price mirrors As-Is until the user types a negotiated price (purchasePriceTouched).
+  // Never assigns null/0 — a blank As-Is leaves the existing purchasePrice alone.
+  function syncPurchasePriceFromAsIs() {
+    const f = state.form;
+    if (f.purchasePriceTouched) return;
+    if (typeof f.asIsValue !== 'number' || !(f.asIsValue > 0)) return;
+    f.purchasePrice = f.asIsValue;
+    const ppEl = document.getElementById('f-purchasePrice');
+    if (ppEl && ppEl !== document.activeElement) ppEl.value = fmtInput(f.purchasePrice);
+  }
+
+  // Purchase Price hint (rental + BRRRR step 1) — patched in place by update() so the link appears while typing
+  function purchasePriceHintHTML() {
+    const base = state.mode === 'brrrr' ? 'As-Is default · push lower for stronger recycle' : 'As-Is default · edit for negotiated price';
+    return base + (state.form.purchasePriceTouched ? '<a href="#" onclick="resetPurchasePrice(); return false;" style="font-size:11px;color:var(--atlas-red);margin-left:6px;">Reset to As-Is</a>' : '');
+  }
+  function refreshPurchasePriceHint() {
+    const el = document.getElementById('pp-hint');
+    if (el) el.innerHTML = purchasePriceHintHTML();
+  }
+
+  // Creative exit inputs with an auto value: once the field is cleared (state back to 0) re-render on blur so the
+  // auto number and its hint come back. Blur only — never on input, so typing is not disturbed.
+  // Auto (fallback) value + hint for the four creative exit inputs that revert to As-Is / market rent when cleared.
+  // Single source for the step template and for cfAutoBlur so the two can never disagree.
+  function cfExitAuto(key) {
+    const f = state.form;
+    if (key === 'cfWrapPrice') return f.cfWrapPrice > 0
+      ? { value: f.cfWrapPrice, hint: 'Custom · clear to revert to auto' }
+      : { value: f.asIsValue ? Math.round(f.asIsValue * 1.10) : '', hint: f.asIsValue ? `Auto 1.1× As-Is (${fmt(f.asIsValue * 1.10)}) · type to override` : 'Auto 1.1× As-Is · set As-Is value above' };
+    if (key === 'cfWrapBuyerPayment') return { value: f.cfWrapBuyerPayment > 0 ? f.cfWrapBuyerPayment : (f.monthlyRent || ''), hint: f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · edit for premium or discount` : "Buyer's all-in monthly payment" };
+    if (key === 'cfLoPrice') return f.cfLoPrice > 0
+      ? { value: f.cfLoPrice, hint: 'Custom · clear to revert to auto' }
+      : { value: f.asIsValue ? Math.round(f.asIsValue * (1 + ((f.cfLoAppreciation || 0) / 100) * (f.cfLoTermYears || 0))) : '', hint: 'Auto: As-Is + appreciation × term · editable' };
+    if (key === 'cfLoLeaseAmount') return { value: f.cfLoLeaseAmount > 0 ? f.cfLoLeaseAmount : (f.monthlyRent || ''), hint: f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · tenant covers taxes/ins on top` : 'Rent the tenant-buyer pays' };
+    return { value: '', hint: '' };
+  }
+  function cfAutoBlur(el, key) {
+    fmtOnBlur(el);
+    if (state.form[key] > 0) return;
+    // Field was cleared: the math already reverted to the auto value, so show it in place — no renderStep(),
+    // which would destroy the control the user just tabbed into.
+    const a = cfExitAuto(key);
+    el.value = fmtInput(a.value);
+    const wrap = el.closest('.input-money');
+    const hint = wrap && wrap.parentElement ? wrap.parentElement.querySelector('.field-hint') : null;
+    if (hint) hint.textContent = a.hint;
+  }
+
+  function resetPurchasePrice() {
+    state.form.purchasePriceTouched = false;
+    syncPurchasePriceFromAsIs();
+    refreshPurchasePriceHint();
+    renderStep();
+    renderSidebar();
+    if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
+  }
+
   function getRehab(mode) {
     return state.form.rehab[mode || state.mode];
   }
 
   function updateRehab(lineKey, field, val) {
-    // Only touches the rehab bucket for the CURRENT mode (per-mode scope)
+    // Only touches the rehab bucket for the CURRENT mode (per-mode scope). Rates are never negative.
+    if (field === 'rate') val = Math.max(0, parseNum(val));
     getRehab()[lineKey][field] = val;
+
+    // Scope tiers describe ONE scope level and are mutually exclusive — turning one on turns the other three off
+    // (roof / hvac / other are independent add-ons and stack). DOM is patched in place, same as the totals below.
+    const SCOPE_TIERS = ['low_mid_cosmetic', 'mid_high_cosmetic', 'low_mid_gut', 'mid_high_gut'];
+    if (field === 'on' && val === true && SCOPE_TIERS.includes(lineKey)) {
+      const rb = getRehab();
+      SCOPE_TIERS.filter(k => k !== lineKey).forEach(k => {
+        if (!rb[k]) return;
+        rb[k].on = false;
+        document.querySelectorAll(`[data-rehab-sub="${k}"]`).forEach(subEl => {
+          const row = subEl.closest('.sidebar-rehab-row, .rehab-row');
+          if (!row) return;
+          const cb = row.querySelector('input[type="checkbox"]');
+          if (cb) cb.checked = false;
+          row.classList.add('inactive');
+          subEl.textContent = fmt(lineSubtotal(k));
+        });
+      });
+    }
 
     // Update rehab totals and per-line subtotals in place (so the user's focus/typing isn't destroyed)
     const tot = document.querySelector('.rehab-total');
@@ -1908,8 +2132,8 @@
       const cmp = document.getElementById('compare-panel-container');
       if (cmp) cmp.innerHTML = comparePanelHTML(state.mode, calculate());
     }
-    // For Rental: rehab lives in main column; sidebar needs stats refresh
-    if (state.mode === 'rental') {
+    // For Rental/BRRRR: rehab lives in main column; sidebar needs stats refresh
+    if (state.mode === 'rental' || state.mode === 'brrrr') {
       renderSidebar();
       if (state.step === 1) updateRentalEquityCallout();
     }
@@ -1920,13 +2144,14 @@
     state.step = 1;
     // BRRRR and Rental both use purchasePrice; sync from As-Is as the starting default
     if (mode === 'rental' || mode === 'brrrr') {
-      state.form.purchasePrice = state.form.asIsValue;
+      syncPurchasePriceFromAsIs();
     }
     if (mode === 'creative' && (!state.form.cfSubAmount || state.form.cfSubAmount === 0) && state.form.mortgageBalance) {
       state.form.cfSubAmount = state.form.mortgageBalance;  // SubTo balance defaults from GHL mortgage_balance
     }
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
+      btn.setAttribute('aria-pressed', btn.dataset.mode === mode ? 'true' : 'false');
     });
     const eyebrow = document.getElementById('hero-eyebrow');
     const title = document.getElementById('hero-title');
@@ -2025,6 +2250,11 @@
     }
     return ((lo + hi) / 2) * 12 * 100;
   }
+  // Cash-on-cash: only meaningful against a positive cash basis. When the buyer's down payment / option fee
+  // exceeds the entry fee there is no cash left in the deal — a positive return is infinite, not negative.
+  function cfRor(annual, basis) {
+    return basis > 0 ? (annual / basis) * 100 : (annual > 0 ? Infinity : 0);
+  }
   function computeCreative(f) {
     const acqNotePayment = cfNotePayment(f);
     const totalDebt      = cfTotalDebt(f);
@@ -2096,8 +2326,8 @@
       allIn: wrapAllIn, escrow: wrapEscrow, pi: wrapPI, buyerPmt: wrapPI,
       rate: wrapRate, minRate: (f.cfWrapMinRate||0), belowFloor: (wrapPI > 0 && wrapRate < (f.cfWrapMinRate||0)),
       monthlyNet: wrapNet, annualNet: wrapAnnual,
-      rorWithDP:    wrapBasisDP !== 0 ? (wrapAnnual / wrapBasisDP) * 100 : 0,
-      rorWithoutDP: entryFee   !== 0 ? (wrapAnnual / entryFee)   * 100 : 0,
+      rorWithDP:    cfRor(wrapAnnual, wrapBasisDP),
+      rorWithoutDP: cfRor(wrapAnnual, entryFee),
     };
 
     // ----- LEASE OPTION exit -----
@@ -2108,8 +2338,8 @@
     const lease = {
       price: loPriceEff, optionFee: (f.cfLoOptionFee||0), lease: leaseAmt,
       monthlyNet: loNet, annualNet: loAnnual,
-      rorWithOF:    loBasisOF !== 0 ? (loAnnual / loBasisOF) * 100 : 0,
-      rorWithoutOF: entryFee  !== 0 ? (loAnnual / entryFee)  * 100 : 0,
+      rorWithOF:    cfRor(loAnnual, loBasisOF),
+      rorWithoutOF: cfRor(loAnnual, entryFee),
     };
 
     // ----- RENTAL exit -----
@@ -2125,7 +2355,7 @@
     const rental = {
       gross: rentGross, mgmt: rentMgmt, maint: rentMaint, capex: rentCapex, vacancy: rentVacancy,
       expenses: rentExpenses, monthlyNet: rentNet, annualNet: rentNet * 12,
-      ror: entryFee !== 0 ? ((rentNet * 12) / entryFee) * 100 : 0,
+      ror: cfRor(rentNet * 12, entryFee),
     };
 
     return { notePayment, acqNotePayment, totalDebt, purchasePrice, closing, piti, plOn: !!f.cfPlOn, plAmount, plPayment, totalDebtService, monthlyCarry, maintenance, entryFee, wrap, lease, rental };
@@ -2190,7 +2420,7 @@
       const acqRate = f.brrrrAcqRate / 100 / 12;
       const acqMonthlyPayment = (acqLoan === 0) ? 0
         : (f.brrrrAcqIO ? acqLoan * acqRate
-          : (acqLoan * (acqRate * Math.pow(1 + acqRate, 360))) / (Math.pow(1 + acqRate, 360) - 1));
+          : cfAmortizedPayment(acqLoan, f.brrrrAcqRate, 360));
       const seasoningDebtService = acqMonthlyPayment * f.brrrrSeasoningMonths;
 
       // ==== PHASE 2: REFI ====
@@ -2206,7 +2436,7 @@
       const refiRate = f.brrrrRefiRate / 100 / 12;
       const refiN = f.brrrrRefiTerm * 12;
       const refiMonthlyPI = refiLoan <= 0 ? 0
-        : (refiLoan * (refiRate * Math.pow(1 + refiRate, refiN))) / (Math.pow(1 + refiRate, refiN) - 1);
+        : cfAmortizedPayment(refiLoan, f.brrrrRefiRate, refiN);
 
       totalCashInDeal = cashLeftInDeal;     // POST-REFI cash-in-deal (the number CoC is computed against)
       loanAmount = refiLoan;                // post-refi loan balance
@@ -2233,7 +2463,7 @@
       monthlyRate = f.interestRate / 100 / 12;
       const n = f.loanTerm * 12;
       monthlyPI = f.allCash ? 0
-        : (loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, n))) / (Math.pow(1 + monthlyRate, n) - 1);
+        : cfAmortizedPayment(loanAmount, f.interestRate, n);
     }
 
     const grossMonthly = f.monthlyRent + f.otherIncome;
@@ -2337,7 +2567,7 @@
       const active = state.step === s.num;
       const done = state.step > s.num;
       const cls = active ? 'step-btn active' : done ? 'step-btn done' : 'step-btn';
-      return `<button class="${cls}" onclick="goToStep(${s.num})">
+      return `<button class="${cls}"${active ? ' aria-current="step"' : ''} onclick="goToStep(${s.num})">
         ${icons[s.icon]}
         <span class="step-label">${s.label}</span>
         <span class="step-kicker">${s.kicker}</span>
@@ -2353,11 +2583,11 @@
     const lineRows = Object.keys(rb).map(k => {
       const line = rb[k];
       const rateDisplay = line.unit === 'total'
-        ? `<div class="input-money"><input type="number" class="num-input" value="${line.rate}" oninput="updateRehab('${k}', 'rate', parseFloat(this.value)||0)"></div>`
-        : `<input type="number" class="num-input" value="${line.rate}" oninput="updateRehab('${k}', 'rate', parseFloat(this.value)||0)">`;
+        ? `<div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="this.value = fmtInput(Math.max(0, parseNum(this.value)))"></div>`
+        : `<input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="this.value = fmtInput(Math.max(0, parseNum(this.value)))">`;
       return `
         <div class="rehab-row ${line.on ? '' : 'inactive'}">
-          <input type="checkbox" ${line.on ? 'checked' : ''} onchange="updateRehab('${k}', 'on', this.checked)">
+          <input type="checkbox" ${line.on ? 'checked' : ''} aria-label="${line.label}" onchange="updateRehab('${k}', 'on', this.checked)">
           <span class="rehab-name">${line.label}</span>
           ${rateDisplay}
           <span class="rehab-unit">${line.unit === 'total' ? 'total' : '$/' + line.unit}</span>
@@ -2405,12 +2635,12 @@
             <div class="field-grid-2">
               <div>
                 <label class="field-label">Wholesale Fee</label>
-                <div class="input-money"><input type="number" class="num-input" value="${f.wholesaleFee}" oninput="update('wholesaleFee', parseFloat(this.value)||0)"></div>
+                <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.wholesaleFee)}" oninput="update('wholesaleFee', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
                 <div class="field-hint">Default $25,000 — your assignment spread</div>
               </div>
               <div>
                 <label class="field-label">Rehabber Profit (calculated)</label>
-                <div class="input-money"><input type="number" class="num-input" value="${Math.round(c.rehabberProfit)}" disabled style="opacity:0.7; cursor:not-allowed;"></div>
+                <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(Math.round(c.rehabberProfit))}" onblur="fmtOnBlur(this)" disabled style="opacity:0.7; cursor:not-allowed;"></div>
                 <div class="field-hint">Auto: $30K if ARV &lt; $350K · else 10% of ARV</div>
               </div>
             </div>
@@ -2438,7 +2668,7 @@
             <div class="field-grid-2">
               <div>
                 <label class="field-label">Novation Profit</label>
-                <div class="input-money"><input type="number" class="num-input" value="${f.novationProfit}" oninput="update('novationProfit', parseFloat(this.value)||0)"></div>
+                <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.novationProfit)}" oninput="update('novationProfit', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
                 <div class="field-hint">Default $25,000 — your spread</div>
               </div>
             </div>
@@ -2467,12 +2697,12 @@
           <div class="field-grid-2">
             <div>
               <label class="field-label">Purchase Price</label>
-              <div class="input-money"><input type="number" class="num-input" value="${f.purchasePrice}" oninput="update('purchasePrice', parseFloat(this.value)||0)"></div>
-              <div class="field-hint">As-Is default · edit for negotiated price</div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-purchasePrice" placeholder="As-Is value" value="${fmtInput(f.purchasePrice || '')}" oninput="update('purchasePrice', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
+              <div class="field-hint" id="pp-hint">${purchasePriceHintHTML()}</div>
             </div>
             <div>
               <label class="field-label">Closing Costs</label>
-              <div class="input-money"><input type="number" class="num-input" value="${f.closingCosts}" oninput="update('closingCosts', parseFloat(this.value)||0)"></div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.closingCosts)}" oninput="update('closingCosts', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
             </div>
             <div>
               <label class="field-label">Annual Appreciation</label>
@@ -2488,7 +2718,7 @@
               <div class="fee-toggle-sub">Added to cash-in — reduces cash-on-cash and total ROI. Edit the amount to any figure.</div>
             </div>
             <div class="fee-toggle-amount">
-              <div class="input-money"><input type="number" class="num-input" value="${f.atlasFeeAmount}" oninput="update('atlasFeeAmount', parseFloat(this.value)||0)" ${f.includeAtlasFee ? '' : 'disabled'}></div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.atlasFeeAmount)}" oninput="update('atlasFeeAmount', parseNum(this.value))" onblur="fmtOnBlur(this)" ${f.includeAtlasFee ? '' : 'disabled'}></div>
             </div>
           </label>
 
@@ -2546,12 +2776,12 @@
           <div class="field-grid-2">
             <div>
               <label class="field-label">Purchase Price</label>
-              <div class="input-money"><input type="number" class="num-input" value="${f.purchasePrice}" oninput="update('purchasePrice', parseFloat(this.value)||0)"></div>
-              <div class="field-hint">As-Is default · push lower for stronger recycle</div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-purchasePrice" placeholder="As-Is value" value="${fmtInput(f.purchasePrice || '')}" oninput="update('purchasePrice', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
+              <div class="field-hint" id="pp-hint">${purchasePriceHintHTML()}</div>
             </div>
             <div>
               <label class="field-label">Closing Costs (Purchase)</label>
-              <div class="input-money"><input type="number" class="num-input" value="${f.closingCosts}" oninput="update('closingCosts', parseFloat(this.value)||0)"></div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.closingCosts)}" oninput="update('closingCosts', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
             </div>
             <div>
               <label class="field-label">Annual Appreciation</label>
@@ -2567,14 +2797,14 @@
               <div class="fee-toggle-sub">Deal-sourcing cost. Included in acquisition cash-in — carries through refi.</div>
             </div>
             <div class="fee-toggle-amount">
-              <div class="input-money"><input type="number" class="num-input" value="${f.atlasFeeAmount}" oninput="update('atlasFeeAmount', parseFloat(this.value)||0)" ${f.includeAtlasFee ? '' : 'disabled'}></div>
+              <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.atlasFeeAmount)}" oninput="update('atlasFeeAmount', parseNum(this.value))" onblur="fmtOnBlur(this)" ${f.includeAtlasFee ? '' : 'disabled'}></div>
             </div>
           </label>
 
           <div class="equity-callout${(f.arv - f.purchasePrice - calcRehab('brrrr')) > 0 ? ' good' : ''}" id="rental-equity-callout">
             <div class="eyebrow">Forced Appreciation Spread</div>
             <div class="val">${fmt(f.arv - f.purchasePrice - calcRehab('brrrr'))}</div>
-            <div class="sub">ARV − Purchase − Rehab · this is what drives cash out at refi</div>
+            <div class="sub">ARV − Purchase − Rehab · drives cash out at refi</div>
           </div>
         `;
       }
@@ -2595,7 +2825,7 @@
           <p class="section-sub">How you're funding the buy + rehab during the seasoning period (before refi).</p>
           <div class="field-group">
             <label class="field-label">Acquisition Type</label>
-            <select class="text-input" onchange="update('brrrrAcqType', this.value)" style="cursor:pointer;">
+            <select class="text-input" onchange="update('brrrrAcqType', this.value)">
               <option value="cash" ${acqType === 'cash' ? 'selected' : ''}>Cash — no acquisition loan</option>
               <option value="hard_money" ${acqType === 'hard_money' ? 'selected' : ''}>Hard Money — short-term, interest-only</option>
               <option value="private" ${acqType === 'private' ? 'selected' : ''}>Private Lender — custom terms</option>
@@ -2719,11 +2949,11 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Monthly Rent</label>
-          <div class="input-money"><input type="number" class="num-input js-rent-input" value="${f.monthlyRent || ''}" oninput="update('monthlyRent', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input js-rent-input" value="${fmtInput(f.monthlyRent || '')}" oninput="update('monthlyRent', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Other Monthly Income</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.otherIncome}" oninput="update('otherIncome', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.otherIncome)}" oninput="update('otherIncome', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Laundry, parking, pet fees</div>
         </div>
         <div>
@@ -2747,11 +2977,11 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Property Tax (Annual)</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.propertyTaxAnnual}" oninput="update('propertyTaxAnnual', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.propertyTaxAnnual)}" oninput="update('propertyTaxAnnual', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Insurance (Annual)</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.insuranceAnnual}" oninput="update('insuranceAnnual', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.insuranceAnnual)}" oninput="update('insuranceAnnual', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Vacancy Rate</label>
@@ -2775,15 +3005,15 @@
         </div>
         <div>
           <label class="field-label">HOA (Monthly)</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.hoaMonthly}" oninput="update('hoaMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.hoaMonthly)}" oninput="update('hoaMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Owner-paid Utilities (Monthly)</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.utilitiesMonthly}" oninput="update('utilitiesMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.utilitiesMonthly)}" oninput="update('utilitiesMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Other Monthly</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.otherExpMonthly}" oninput="update('otherExpMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.otherExpMonthly)}" oninput="update('otherExpMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Annual Expense Growth</label>
@@ -2809,14 +3039,16 @@
     const cashBackSign = b.cashLeftInDeal <= 0 ? 'good' : 'bad';
     const cashBackLabel = b.cashLeftInDeal <= 0 ? 'Fully recycled · infinite return' : 'Cash left in deal';
     return `
+      <div id="refi-summary">
       <div class="rehab-card" style="margin-top: 24px;">
         <div class="rehab-head">
           <span class="rehab-title">Refi Math</span>
           <span class="rehab-total">${fmt(b.cashOutAtRefi)} <span style="font-family:var(--accent);font-size:11px;font-weight:600;color:var(--ink-3);letter-spacing:0.1em;text-transform:uppercase;margin-left:6px;">cash out</span></span>
         </div>
         <div class="row"><span class="row-label">Refi Loan Amount (ARV × ${state.form.brrrrRefiLtv}%)</span><span class="row-val">${fmt(b.refiLoan)}</span></div>
-        <div class="row"><span class="row-label">− Acquisition Loan Payoff</span><span class="row-val">−${fmt(b.acqLoan)}</span></div>
-        <div class="row"><span class="row-label">− Refi Closing Costs (${state.form.brrrrRefiClosingPct}%)</span><span class="row-val">−${fmt(b.refiClosing)}</span></div>
+        <div class="row"><span class="row-label">− Acquisition Loan Payoff</span><span class="row-val">${fmt(-(b.acqLoan))}</span></div>
+        <div class="row"><span class="row-label">− Refi Closing Costs (${state.form.brrrrRefiClosingPct}%)</span><span class="row-val">${fmt(-(b.refiClosing))}</span></div>
+        <div class="row"><span class="row-label">Refi Monthly P&I (${state.form.brrrrRefiRate}% · ${state.form.brrrrRefiTerm}yr)</span><span class="row-val">${fmt(b.refiMonthlyPI)}</span></div>
         <div class="row-divider">
           <div class="row row-bold"><span class="row-label">Cash Out at Refi</span><span class="row-val">${fmt(b.cashOutAtRefi)}</span></div>
           <div class="row row-bold"><span class="row-label">Acq Cash + Seasoning Debt</span><span class="row-val">${fmt(b.acqCashIn + b.seasoningDebtService)}</span></div>
@@ -2825,14 +3057,78 @@
             <span class="row-val">${fmt(Math.max(0, b.cashLeftInDeal))}</span>
           </div>
         </div>
+        ${refiShortfallChip(c)}
+      </div>
       </div>
     `;
+  }
+
+  // ---- Underwriting flags: ONE source for the form-view chips and the report's "Underwriting Flags" card ----
+  // DSCR only means something when there is debt service AND income; otherwise show "—" and no chip.
+  function dscrDisplay(c) { return (c.monthlyPI > 0 && c.grossMonthly > 0) ? c.dscr.toFixed(2) + 'x' : '—'; }
+  function isLowDscr(c) { return c.monthlyPI > 0 && c.grossMonthly > 0 && c.dscr < 1.2; }
+  const DSCR_FLAG = 'DSCR below 1.20 — most DSCR lenders will not fund this loan as structured.';
+  // BRRRR refi chip: needs an ARV to size the refi at all; only then can the loan fall short.
+  function refiShortfallChip(c) {
+    const b = c.brrrr;
+    if (!b) return '';
+    if (!(state.form.arv > 0)) return warnChip('Enter ARV to size the refi.');
+    return b.cashOutAtRefi < 0 ? warnChip('Refi loan does not cover the acquisition loan payoff and closing — short by ' + fmt(-b.cashOutAtRefi) + '.', true) : '';
+  }
+  // Returns [{ key, text, danger }] for the current mode. Keys let a view skip a flag it already shows another way.
+  function underwritingFlags(c) {
+    const f = state.form, mode = state.mode, flags = [];
+    const rb = getRehab(mode) || {};
+    const sqftLineOn = Object.keys(rb).some(k => rb[k].on && rb[k].unit === 'sqft');
+    const b = c.brrrr;
+    if (mode === 'wholesale' || mode === 'novation') {
+      const mao = mode === 'wholesale' ? c.wholesaleMAO : c.novationMAO;
+      const hasValue = mode === 'wholesale' ? f.arv > 0 : f.asIsValue > 0;
+      const mortgage = f.mortgageBalance || 0;
+      if (!hasValue) flags.push({ key: 'missing-value', text: mode === 'wholesale' ? 'ARV is missing — enter it to price this deal.' : 'As-Is value is missing — enter it to price this deal.', danger: false });
+      if (hasValue && !(f.sqft > 0) && sqftLineOn) flags.push({ key: 'sqft', text: 'Square feet is blank — $/sf rehab lines are counting as $0, so this MAO is overstated.', danger: false });
+      if (mortgage > 0 && mao > 0 && mao < mortgage) flags.push({ key: 'mortgage', text: 'MAO is ' + fmt(mortgage - mao) + ' below the mortgage payoff — the seller cannot close at this price without a short sale or bringing cash.', danger: true });
+    } else if (mode === 'rental' || mode === 'brrrr') {
+      const hasRent = f.monthlyRent > 0;
+      if (mode === 'brrrr' && !(f.arv > 0)) flags.push({ key: 'missing-value', text: 'Enter ARV to size the refi.', danger: false });
+      if (mode === 'brrrr' && f.arv > 0 && !(f.sqft > 0) && sqftLineOn) flags.push({ key: 'sqft', text: 'Square feet is blank — $/sf rehab lines are counting as $0, so the rehab budget is understated.', danger: false });
+      if (!hasRent) flags.push({ key: 'rent', text: 'Enter market rent to grade this deal.', danger: false });
+      if (hasRent && isLowDscr(c)) flags.push({ key: 'dscr', text: DSCR_FLAG, danger: true });
+      if (mode === 'brrrr' && f.arv > 0 && b && b.cashOutAtRefi < 0) flags.push({ key: 'refi', text: 'Refi loan does not cover the acquisition loan payoff and closing — short by ' + fmt(-b.cashOutAtRefi) + '.', danger: true });
+    }
+    return flags;
+  }
+  function flagChipsHTML(c, skipKeys) {
+    return underwritingFlags(c).filter(fl => !(skipKeys || []).includes(fl.key)).map(fl => warnChip(fl.text, fl.danger)).join('');
+  }
+
+  // Inline underwriting warning chip — returns '' when there is nothing to say
+  function warnChip(text, danger) {
+    if (!text) return '';
+    return `<div class="warn-chip${danger ? ' danger' : ''}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:1px;" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg><span>${text}</span></div>`;
   }
 
   function offerCalloutHTML(mode, c) {
     const f = state.form;
     const mao = mode === 'wholesale' ? c.wholesaleMAO : c.novationMAO;
     const mortgage = f.mortgageBalance || 0;
+    // The driving value (ARV for wholesale, As-Is for novation) — no value, no price
+    const hasValue = mode === 'wholesale' ? f.arv > 0 : f.asIsValue > 0;
+    const eyebrow = `<div class="eyebrow">${mode === 'wholesale' ? 'Wholesale' : 'Novation'} Max Allowable Offer</div>`;
+    // Inline underwriting warnings — rendered under the callout and rebuilt with it (shared with the report)
+    const warnings = flagChipsHTML(c, ['missing-value']);
+    if (!hasValue) {
+      return `
+      <div id="offer-block">
+      <div class="offer-callout">
+        ${eyebrow}
+        <div class="mao-val" id="mao-val-live" style="font-size:22px;color:#B8BCC4;font-weight:600;">${mode === 'wholesale' ? 'Enter ARV to price this deal' : 'Enter As-Is Value to price this deal'}</div>
+        <div class="mao-sub">MAO, floor and ceiling appear once the value is set.</div>
+      </div>
+      <div id="offer-warnings">${warnings}</div>
+      </div>
+    `;
+    }
     const netAtMao = Math.max(0, mao - mortgage);
     const netAtFloor = Math.max(0, (mao - 5000) - mortgage);
     const netAtCeiling = Math.max(0, (mao + 5000) - mortgage);
@@ -2842,8 +3138,9 @@
       ? `Seller nets <strong>${fmt(netAtMao)}</strong> at table after ${fmt(mortgage)} mortgage payoff`
       : 'No mortgage on file · MAO equals net to seller';
     return `
+      <div id="offer-block">
       <div class="offer-callout">
-        <div class="eyebrow">${mode === 'wholesale' ? 'Wholesale' : 'Novation'} Max Allowable Offer</div>
+        ${eyebrow}
         <div class="mao-val" id="mao-val-live">${fmt(mao)}</div>
         <div class="mao-sub">${mode === 'wholesale' ? 'Cash offer to seller · flip buyer exit' : 'Net to seller · retail listing exit'}</div>
         <div class="net-seller-sub" id="net-seller-sub">${netSubLabel}</div>
@@ -2865,6 +3162,8 @@
           </div>
         </div>
       </div>
+      <div id="offer-warnings">${warnings}</div>
+      </div>
     `;
   }
 
@@ -2874,9 +3173,9 @@
       return `
         <div class="offer-math" id="offer-math">
           <div class="math-row"><span>ARV</span><span>${fmt(f.arv)}</span></div>
-          <div class="math-row"><span>− Repair Cost</span><span>−${fmt(c.repairCost)}</span></div>
-          <div class="math-row"><span>− Rehabber Profit</span><span>−${fmt(c.rehabberProfit)}</span></div>
-          <div class="math-row"><span>− Wholesale Fee</span><span>−${fmt(f.wholesaleFee)}</span></div>
+          <div class="math-row"><span>− Repair Cost</span><span>${fmt(-(c.repairCost))}</span></div>
+          <div class="math-row"><span>− Rehabber Profit</span><span>${fmt(-(c.rehabberProfit))}</span></div>
+          <div class="math-row"><span>− Wholesale Fee</span><span>${fmt(-(f.wholesaleFee))}</span></div>
           <div class="math-row total"><span>Wholesale MAO</span><span>${fmt(c.wholesaleMAO)}</span></div>
           <div class="math-row" style="margin-top:8px; color:var(--ink-4); font-style:italic;"><span>MAO : ARV ratio</span><span>${fmtPct(c.wholesaleMaoArv)}</span></div>
         </div>
@@ -2886,8 +3185,8 @@
         <div class="offer-math" id="offer-math">
           <div class="math-row"><span>As-Is Value</span><span>${fmt(f.asIsValue)}</span></div>
           <div class="math-row"><span>× 88% (covers 12% sale costs)</span><span>${fmt(f.asIsValue * 0.88)}</span></div>
-          <div class="math-row"><span>− Repair Cost</span><span>−${fmt(c.repairCost)}</span></div>
-          <div class="math-row"><span>− Novation Profit</span><span>−${fmt(f.novationProfit)}</span></div>
+          <div class="math-row"><span>− Repair Cost</span><span>${fmt(-(c.repairCost))}</span></div>
+          <div class="math-row"><span>− Novation Profit</span><span>${fmt(-(f.novationProfit))}</span></div>
           <div class="math-row total"><span>Novation MAO</span><span>${fmt(c.novationMAO)}</span></div>
           <div class="math-row" style="margin-top:8px; color:var(--ink-4); font-style:italic;"><span>MAO : ARV ratio</span><span>${fmtPct(c.novationMaoArv)}</span></div>
         </div>
@@ -2898,16 +3197,17 @@
   function updateOfferCallout() {
     const c = calculate();
     const mode = state.mode;
-    // Rebuild the whole callout so the "Net to Seller" tier lines can appear/disappear
-    // based on whether mortgage > 0. No input focus inside the callout, so this is safe.
-    const callout = document.querySelector('.offer-callout');
-    if (callout) {
+    // Rebuild the whole callout + warnings block so the "Net to Seller" tier lines, the empty
+    // state and the warning chips can appear/disappear. No input focus inside it, so this is safe.
+    const block = document.getElementById('offer-block');
+    if (block) {
       const temp = document.createElement('div');
       temp.innerHTML = offerCalloutHTML(mode, c).trim();
-      callout.replaceWith(temp.firstChild);
+      block.replaceWith(temp.firstChild);
     }
     const math = document.getElementById('offer-math');
     if (math) math.outerHTML = offerMathHTML(mode, c).trim();
+    refreshMobileBar();
   }
 
   // ============ COMPARE PANEL ============
@@ -2920,11 +3220,11 @@
       const line = rb[k];
       // Compact rate input (always visible, inline with label) — for rehab rates per line
       const rateInput = line.unit === 'total'
-        ? `<div class="rate-input-wrap money"><input type="number" class="rate-input" value="${line.rate}" oninput="updateRehab('${k}', 'rate', parseFloat(this.value)||0)"></div><span class="unit-label">total</span>`
-        : `<input type="number" class="rate-input" value="${line.rate}" oninput="updateRehab('${k}', 'rate', parseFloat(this.value)||0)"><span class="unit-label">$/${line.unit}</span>`;
+        ? `<div class="rate-input-wrap money"><input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="this.value = fmtInput(Math.max(0, parseNum(this.value)))"></div><span class="unit-label">total</span>`
+        : `<input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="this.value = fmtInput(Math.max(0, parseNum(this.value)))"><span class="unit-label">$/${line.unit}</span>`;
       return `
         <label class="sidebar-rehab-row ${line.on ? '' : 'inactive'}">
-          <input type="checkbox" ${line.on ? 'checked' : ''} onchange="updateRehab('${k}', 'on', this.checked)">
+          <input type="checkbox" ${line.on ? 'checked' : ''} aria-label="${line.label}" onchange="updateRehab('${k}', 'on', this.checked)">
           <span class="name">
             <span>${line.label}</span>
             <span class="rate-input-wrap${line.unit === 'total' ? ' money' : ''}">${rateInput}</span>
@@ -2974,16 +3274,47 @@
     // Show current mode first
     const rows = currentMode === 'wholesale' ? wsRow + novRow : novRow + wsRow;
 
+    // Transparency: the two MAOs use separate rehab buckets — flag when the scopes differ and offer a one-click copy
+    const otherMode = currentMode === 'wholesale' ? 'novation' : 'wholesale';
+    const currentModeLabel = currentMode === 'wholesale' ? 'Wholesale' : 'Novation';
+    const otherModeLabel = otherMode === 'wholesale' ? 'Wholesale' : 'Novation';
+    const scopeNote = c.wsRepair !== c.novRepair ? `
+        <div class="compare-scope-note" style="font-size: 10px; color: #B8BCC4;">
+          Rehab scopes differ · Wholesale ${fmt(c.wsRepair)} vs Novation ${fmt(c.novRepair)}
+          <button type="button" onclick="mirrorRehab('${currentMode}', '${otherMode}')" style="background: none; border: none; padding: 0; color: var(--atlas-gold); font: inherit; text-decoration: underline; cursor: pointer;">Copy ${currentModeLabel} scope to ${otherModeLabel}</button>
+        </div>` : '';
+
     return `
       <div class="compare-panel">
         <div class="compare-title">Exit Comparison</div>
         ${rows}
+        ${scopeNote}
         <div class="compare-delta">
           <span>${deltaDir}</span>
           <strong>${deltaLabel}</strong>
         </div>
       </div>
     `;
+  }
+
+  // Copy the rehab scope (rate + on for every line) from one exit strategy's bucket into another's
+  function mirrorRehab(from, to) {
+    const src = state.form.rehab[from];
+    const dst = state.form.rehab[to];
+    if (!src || !dst) return;
+    // Copying an empty scope over a populated one wipes it — make sure that is what the user meant
+    const anyOn = rb => Object.keys(rb).some(k => rb[k].on);
+    if (!anyOn(src) && anyOn(dst)) {
+      const names = { wholesale: 'Wholesale', novation: 'Novation', brrrr: 'BRRRR', rental: 'Rental' };
+      if (!window.confirm('Copy an empty scope to ' + (names[to] || to) + '? This clears its rehab lines.')) return;
+    }
+    Object.keys(src).forEach(k => {
+      if (!dst[k]) { dst[k] = { ...src[k] }; return; }
+      dst[k].rate = src[k].rate;
+      dst[k].on = src[k].on;
+    });
+    renderSidebar();
+    updateOfferCallout();
   }
 
   // ============ SIDEBAR ============
@@ -2993,6 +3324,7 @@
     const b = c.brrrr;
     if (!b) return rentalStatsCardHTML(c);
     const fullyRecycled = b.cashLeftInDeal <= 0;
+    const lowDscr = isLowDscr(c);
     return `
       <div class="preview-card">
         <div class="preview-head">
@@ -3008,14 +3340,17 @@
             <div class="preview-stat"><span class="preview-stat-label">Post-Refi CoC</span><span class="preview-stat-val ${c.cashOnCash >= 8 ? 'good' : c.cashOnCash < 4 ? 'bad' : ''}">${fullyRecycled ? '∞' : fmtPct(c.cashOnCash)}</span></div>
             <div class="preview-stat"><span class="preview-stat-label">Cap Rate (on ARV)</span><span class="preview-stat-val">${fmtPct(c.capRate)}</span></div>
             <div class="preview-stat"><span class="preview-stat-label">Monthly Cash Flow</span><span class="preview-stat-val ${c.cashFlowMonthly > 0 ? 'good' : 'bad'}">${fmt(c.cashFlowMonthly)}</span></div>
+            <div class="preview-stat"><span class="preview-stat-label">DSCR (post-refi)</span><span class="preview-stat-val ${lowDscr ? 'bad' : ''}">${dscrDisplay(c)}</span></div>
           </div>
         </div>
+        ${flagChipsHTML(c)}
       </div>
     `;
   }
 
   function rentalStatsCardHTML(c) {
     const f = state.form;
+    const lowDscr = isLowDscr(c);
     return `
       <div class="preview-card">
         <div class="preview-head">
@@ -3026,6 +3361,7 @@
           <div class="preview-stat"><span class="preview-stat-label">Monthly Cash Flow</span><span class="preview-stat-val ${c.cashFlowMonthly > 0 ? 'good' : 'bad'}">${fmt(c.cashFlowMonthly)}</span></div>
           <div class="preview-stat"><span class="preview-stat-label">Cash-on-Cash</span><span class="preview-stat-val">${fmtPct(c.cashOnCash)}</span></div>
           <div class="preview-stat"><span class="preview-stat-label">Cap Rate</span><span class="preview-stat-val">${fmtPct(c.capRate)}</span></div>
+          <div class="preview-stat"><span class="preview-stat-label">DSCR</span><span class="preview-stat-val ${lowDscr ? 'bad' : ''}">${dscrDisplay(c)}</span></div>
           <div class="preview-stat"><span class="preview-stat-label">Instant Equity</span><span class="preview-stat-val ${c.instantEquity > 0 ? 'good' : 'bad'}">${fmt(c.instantEquity)}</span></div>
           <div class="preview-divider">
             <div class="preview-stat"><span class="preview-stat-label">NOI (Annual)</span><span class="preview-stat-val">${fmt(c.noiAnnual)}</span></div>
@@ -3034,6 +3370,7 @@
             ${f.includeAtlasFee ? `<div class="preview-stat"><span class="preview-stat-label" style="font-style:italic;font-size:9px;">* incl. ${fmt(f.atlasFeeAmount)} Atlas fee</span><span></span></div>` : ''}
           </div>
         </div>
+        ${flagChipsHTML(c)}
       </div>
     `;
   }
@@ -3067,7 +3404,7 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Note Amount</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfSfAmount}" oninput="update('cfSfAmount', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfSfAmount)}" oninput="update('cfSfAmount', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Principal owed to the seller</div>
         </div>
         <div>
@@ -3095,12 +3432,12 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Current Note Balance</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfSubAmount}" oninput="update('cfSubAmount', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfSubAmount)}" oninput="update('cfSubAmount', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Defaults from the property bar's mortgage balance</div>
         </div>
         <div>
           <label class="field-label">Monthly P&I Payment</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfSubPI}" oninput="update('cfSubPI', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfSubPI)}" oninput="update('cfSubPI', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">The existing payment you take over (P&I only)</div>
         </div>
         <div>
@@ -3134,22 +3471,22 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Property Taxes</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfTaxesMonthly}" oninput="update('cfTaxesMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfTaxesMonthly)}" oninput="update('cfTaxesMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Monthly</div>
         </div>
         <div>
           <label class="field-label">Insurance</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfInsuranceMonthly}" oninput="update('cfInsuranceMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfInsuranceMonthly)}" oninput="update('cfInsuranceMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Monthly · landlord / hazard policy</div>
         </div>
         <div>
           <label class="field-label">HOA / Other Fees</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfHoaMonthly}" oninput="update('cfHoaMonthly', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfHoaMonthly)}" oninput="update('cfHoaMonthly', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Monthly</div>
         </div>
         <div>
           <label class="field-label">Note Servicing Fee</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfNoteServicing}" oninput="update('cfNoteServicing', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfNoteServicing)}" oninput="update('cfNoteServicing', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Default $25 · servicing company</div>
         </div>
       </div>
@@ -3167,41 +3504,41 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Cash to Seller</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfCashToSeller}" oninput="update('cfCashToSeller', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfCashToSeller)}" oninput="update('cfCashToSeller', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
         </div>
         <div>
           <label class="field-label">Arrears / Liens</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfArrearsLiens}" oninput="update('cfArrearsLiens', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfArrearsLiens)}" oninput="update('cfArrearsLiens', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Back payments, code liens, etc.</div>
         </div>
         <div>
           <label class="field-label">Cost of Acquisition</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfCostOfAcq}" oninput="update('cfCostOfAcq', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfCostOfAcq)}" oninput="update('cfCostOfAcq', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Atlas fee / assignment · default $15,000</div>
         </div>
         <div>
           <label class="field-label">Closing Costs <span id="cf-closing-tag" style="color:var(--ink-4);font-weight:400;">${f.cfClosingCosts > 0 ? '· custom' : '· auto'}</span></label>
-          <div class="input-money"><input type="number" class="num-input" id="cf-closing-val" value="${Math.round(cr.closing)}" oninput="update('cfClosingCosts', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="cf-closing-val" value="${fmtInput(Math.round(cr.closing))}" oninput="update('cfClosingCosts', parseNum(this.value))" onblur="fmtOnBlur(this); renderCreativeSummary()"></div>
           <div class="field-hint" id="cf-closing-hint">${f.cfClosingCosts > 0 ? 'Custom override · clear the field to revert to auto' : 'Auto 1.5% of purchase price · type to override'}</div>
         </div>
         <div>
           <label class="field-label">Renovation</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfRenovation}" oninput="update('cfRenovation', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfRenovation)}" oninput="update('cfRenovation', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Make-ready / turn cost</div>
         </div>
         <div>
           <label class="field-label">Marketing</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfMarketing}" oninput="update('cfMarketing', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfMarketing)}" oninput="update('cfMarketing', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Cost to find buyer/tenant · default $500</div>
         </div>
         <div>
           <label class="field-label">Maintenance Reserve <span id="cf-maint-tag" style="color:var(--ink-4);font-weight:400;">${f.cfMaintOverride > 0 ? '· custom' : '· auto'}</span></label>
-          <div class="input-money"><input type="number" class="num-input" id="cf-maint-val" value="${Math.round(cr.maintenance)}" oninput="update('cfMaintOverride', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="cf-maint-val" value="${fmtInput(Math.round(cr.maintenance))}" oninput="update('cfMaintOverride', parseNum(this.value))" onblur="fmtOnBlur(this); renderCreativeSummary()"></div>
           <div class="field-hint" id="cf-maint-hint">${f.cfMaintOverride > 0 ? 'Custom override · clear the field to revert to auto' : `2 × monthly carry (${fmt(cr.monthlyCarry)}/mo) · type to override`}</div>
         </div>
         <div>
           <label class="field-label">Acceleration Insurance <span style="color:var(--ink-4);font-weight:400;">· separate</span></label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfAccelInsurance}" oninput="update('cfAccelInsurance', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfAccelInsurance)}" oninput="update('cfAccelInsurance', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Due-on-sale protection · NOT in cash basis</div>
         </div>
       </div>
@@ -3248,8 +3585,8 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Sale Price to Buyer (OFV)</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfWrapPrice > 0 ? f.cfWrapPrice : (f.asIsValue ? Math.round(f.asIsValue*1.10) : '')}" oninput="update('cfWrapPrice', parseFloat(this.value)||0)"></div>
-          <div class="field-hint">${f.cfWrapPrice > 0 ? 'Custom · clear to revert to auto' : (f.asIsValue ? `Auto 1.1× As-Is (${fmt(f.asIsValue*1.10)}) · type to override` : 'Auto 1.1× As-Is · set As-Is value above')}</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(cfExitAuto('cfWrapPrice').value)}" oninput="update('cfWrapPrice', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfWrapPrice')"></div>
+          <div class="field-hint">${cfExitAuto('cfWrapPrice').hint}</div>
         </div>
         <div>
           <label class="field-label">Buyer Down Payment</label>
@@ -3258,8 +3595,8 @@
         </div>
         <div>
           <label class="field-label">Total Buyer Payment</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfWrapBuyerPayment > 0 ? f.cfWrapBuyerPayment : (f.monthlyRent || '')}" oninput="update('cfWrapBuyerPayment', parseFloat(this.value)||0)"></div>
-          <div class="field-hint">${f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · edit for premium or discount` : "Buyer's all-in monthly payment"}</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(cfExitAuto('cfWrapBuyerPayment').value)}" oninput="update('cfWrapBuyerPayment', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfWrapBuyerPayment')"></div>
+          <div class="field-hint">${cfExitAuto('cfWrapBuyerPayment').hint}</div>
         </div>
         <div>
           <label class="field-label">Minimum Rate (floor)</label>
@@ -3276,18 +3613,18 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Option / Purchase Price</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoPrice > 0 ? f.cfLoPrice : (f.asIsValue ? Math.round(f.asIsValue*(1+((f.cfLoAppreciation||4)/100)*(f.cfLoTermYears||0))) : '')}" oninput="update('cfLoPrice', parseFloat(this.value)||0)"></div>
-          <div class="field-hint">${f.cfLoPrice > 0 ? 'Custom · clear to revert to auto' : 'Auto: As-Is + appreciation × term · editable'}</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(cfExitAuto('cfLoPrice').value)}" oninput="update('cfLoPrice', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfLoPrice')"></div>
+          <div class="field-hint">${cfExitAuto('cfLoPrice').hint}</div>
         </div>
         <div>
           <label class="field-label">Option Fee</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoOptionFee}" oninput="update('cfLoOptionFee', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfLoOptionFee)}" oninput="update('cfLoOptionFee', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Default $7,500 · upfront, offsets cash in</div>
         </div>
         <div>
           <label class="field-label">Monthly Lease</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfLoLeaseAmount > 0 ? f.cfLoLeaseAmount : (f.monthlyRent || '')}" oninput="update('cfLoLeaseAmount', parseFloat(this.value)||0)"></div>
-          <div class="field-hint">${f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · tenant covers taxes/ins on top` : "Rent the tenant-buyer pays"}</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(cfExitAuto('cfLoLeaseAmount').value)}" oninput="update('cfLoLeaseAmount', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfLoLeaseAmount')"></div>
+          <div class="field-hint">${cfExitAuto('cfLoLeaseAmount').hint}</div>
         </div>
         <div>
           <label class="field-label">Option Term (Years)</label>
@@ -3304,12 +3641,12 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Monthly Rent</label>
-          <div class="input-money"><input type="number" class="num-input js-rent-input" value="${f.monthlyRent || ''}" oninput="update('monthlyRent', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input js-rent-input" value="${fmtInput(f.monthlyRent || '')}" oninput="update('monthlyRent', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Market rent · syncs with the Rent Rate field up top</div>
         </div>
         <div>
           <label class="field-label">Other Income</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentOtherIncome}" oninput="update('cfRentOtherIncome', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfRentOtherIncome)}" oninput="update('cfRentOtherIncome', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Parking, laundry, storage, misc.</div>
         </div>
         <div>
@@ -3334,12 +3671,12 @@
         </div>
         <div>
           <label class="field-label">Accounting &amp; Legal</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentAccountingLegal}" oninput="update('cfRentAccountingLegal', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfRentAccountingLegal)}" oninput="update('cfRentAccountingLegal', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Monthly · default $50</div>
         </div>
         <div>
           <label class="field-label">Utilities</label>
-          <div class="input-money"><input type="number" class="num-input" value="${f.cfRentUtilities}" oninput="update('cfRentUtilities', parseFloat(this.value)||0)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfRentUtilities)}" oninput="update('cfRentUtilities', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Gas/electric/water/trash you cover</div>
         </div>
       </div>
@@ -3374,6 +3711,13 @@
       <p class="section-sub" style="margin-top:8px;">${subtitle}</p>
       ${inputs}
       <div id="cf-step-summary">${creativeSummaryHTML()}</div>
+      <div style="margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--rule); display: flex; gap: 12px; flex-wrap: wrap;">
+              <button class="btn btn-generate" onclick="generateReport()" style="flex: 1; min-width: 220px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                Generate Deal Report
+              </button>
+              ${saveToGhlButtonHTML()}
+            </div>
     `;
   }
 
@@ -3481,7 +3825,7 @@
   }
   function refreshCreativeEntryFee() {
     const cr = calculate().creative; if (!cr) return;
-    const setVal  = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+    const setVal  = (id, v) => { const e = document.getElementById(id); if (e && e !== document.activeElement) e.value = fmtInput(v); };  // never overwrite the field the user is typing in
     const setText = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
     const f = state.form;
     const closingCustom = f.cfClosingCosts > 0;
@@ -3687,6 +4031,48 @@
       const ap = document.getElementById('grade-legend-ap');
       if (ap) ap.style.display = 'none';
     }
+    refreshMobileBar();
+  }
+
+  // ============ MOBILE RESULTS BAR (sticky headline number on phones) ============
+  function refreshMobileBar() {
+    const bar = document.getElementById('mobile-bar');
+    if (!bar) return;
+    const c = calculate();
+    const f = state.form;
+    let label, val, badge, badgeBg;
+    if (state.mode === 'wholesale') {
+      label = 'Wholesale MAO';
+      val = f.arv > 0 ? fmt(c.wholesaleMAO) : 'Enter ARV';
+      badge = 'W'; badgeBg = 'var(--atlas-charcoal-2)';
+    } else if (state.mode === 'novation') {
+      label = 'Novation MAO';
+      val = f.asIsValue > 0 ? fmt(c.novationMAO) : 'Enter As-Is';
+      badge = 'N'; badgeBg = 'var(--atlas-gold-dark)';
+    } else if (state.mode === 'brrrr') {
+      const b = c.brrrr;
+      if (b && b.cashLeftInDeal <= 0) { label = 'Capital'; val = 'Fully recycled'; }
+      else { label = 'Cash Left in Deal'; val = fmt(b ? b.cashLeftInDeal : 0); }
+      badge = c.grade; badgeBg = c.gradeColor;
+    } else if (state.mode === 'creative') {
+      const cr = c.creative;
+      const exitName = f.cfActiveExit === 'wrap' ? 'Wrap' : f.cfActiveExit === 'lease_option' ? 'Lease Option' : 'Rental';
+      const ex = cr ? (f.cfActiveExit === 'wrap' ? cr.wrap : f.cfActiveExit === 'lease_option' ? cr.lease : cr.rental) : null;
+      label = exitName + ' Net / mo';
+      val = fmt(ex ? ex.monthlyNet : 0);
+      badge = f.cfAcqType === 'seller_finance' ? 'Seller Fin' : f.cfAcqType === 'subto' ? 'SubTo' : 'Hybrid';
+      badgeBg = 'var(--atlas-gold)';
+    } else {
+      label = 'Cash Flow / mo';
+      val = fmt(c.cashFlowMonthly);
+      badge = c.grade; badgeBg = c.gradeColor;
+    }
+    document.getElementById('mobile-bar-label').textContent = label;
+    document.getElementById('mobile-bar-val').textContent = val;
+    const badgeEl = document.getElementById('mobile-bar-badge');
+    badgeEl.textContent = badge;
+    badgeEl.style.background = badgeBg;
+    bar.hidden = document.getElementById('form-view').classList.contains('hidden');
   }
 
   // ============ REPORT RENDER ============
@@ -3694,10 +4080,36 @@
     const f = state.form;
     const c = calculate();
     document.getElementById('rpt-address').textContent = f.address || "Property Address";
-    document.getElementById('rpt-beds').textContent = `${f.beds} BD`;
-    document.getElementById('rpt-baths').textContent = `${f.baths} BA`;
-    document.getElementById('rpt-sqft').textContent = `${(f.sqft || 0).toLocaleString()} SF`;
-    document.getElementById('rpt-year').textContent = `Built ${f.yearBuilt}`;
+    const sellerEl = document.getElementById('rpt-seller');
+    const sellerName = (f.sellerName || ghlContext.contactName || '').trim();
+    if (sellerName) {
+      sellerEl.innerHTML = 'Seller · <strong>' + escapeHTML(sellerName) + '</strong>';
+      sellerEl.style.display = '';
+    } else {
+      sellerEl.style.display = 'none';
+    }
+    // Specs: hide any span whose value is missing (null beds/baths/year, 0 sqft),
+    // then show a divider only when it sits between two visible spans.
+    const setSpec = (id, present, text) => {
+      const el = document.getElementById(id);
+      el.textContent = present ? text : '';
+      el.style.display = present ? '' : 'none';
+    };
+    setSpec('rpt-beds', f.beds > 0, `${f.beds} BD`);
+    setSpec('rpt-baths', f.baths > 0, `${f.baths} BA`);
+    setSpec('rpt-sqft', f.sqft > 0, `${(f.sqft || 0).toLocaleString()} SF`);
+    setSpec('rpt-year', f.yearBuilt > 0, `Built ${f.yearBuilt}`);
+    let pendingDivider = null, anySpecVisible = false;
+    Array.from(document.getElementById('rpt-beds').parentElement.children).forEach(ch => {
+      if (ch.classList.contains('spec-divider')) {
+        ch.style.display = 'none';
+        if (anySpecVisible) pendingDivider = ch;
+      } else if (ch.style.display !== 'none') {
+        if (pendingDivider) pendingDivider.style.display = '';
+        pendingDivider = null;
+        anySpecVisible = true;
+      }
+    });
 
     const gradeBadge = document.getElementById('rpt-grade');
     const gradeLabel = document.getElementById('rpt-grade-label');
@@ -3793,8 +4205,8 @@
         </div>
         <div class="key-metric">
           <div class="key-metric-label">Cash Out @ Refi</div>
-          <div class="key-metric-val accent">${fmt(b ? b.cashOutAtRefi : 0)}</div>
-          <div class="key-metric-sub">recycled capital</div>
+          <div class="key-metric-val ${(b ? b.cashOutAtRefi : 0) < 0 ? 'bad' : 'accent'}">${fmt(b ? b.cashOutAtRefi : 0)}</div>
+          <div class="key-metric-sub">${(b ? b.cashOutAtRefi : 0) < 0 ? 'refi shortfall' : 'recycled capital'}</div>
         </div>
       `;
       sections.innerHTML = brrrrReportSectionsHTML(c);
@@ -3860,6 +4272,16 @@
       `;
       sections.innerHTML = rentalReportSectionsHTML(c);
     }
+    // Underwriting flags — same conditions as the form-view chips, so the report never hides a warning
+    const flags = underwritingFlags(c);
+    if (flags.length) {
+      sections.insertAdjacentHTML('afterbegin', `
+      <div class="card" id="rpt-flags">
+        <div class="section-eyebrow">Underwriting Flags</div>
+        <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 4px; color: var(--ink);">Review before sending</h3>
+        ${flags.map(fl => warnChip(fl.text, fl.danger)).join('')}
+      </div>`);
+    }
 
     document.querySelectorAll('.rpt-date').forEach(el => {
       el.textContent = 'Generated ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -3880,9 +4302,9 @@
           <div class="section-eyebrow">Deal Math</div>
           <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--ink);">Atlas Wholesale Formula</h3>
           <div class="row"><span class="row-label">After Repair Value</span><span class="row-val">${fmt(f.arv)}</span></div>
-          <div class="row"><span class="row-label">− Repair Cost${f.sqft > 0 ? ' (' + repairPerSf + '/sf)' : ''}</span><span class="row-val">−${fmt(c.repairCost)}</span></div>
-          <div class="row"><span class="row-label">− Rehabber Profit</span><span class="row-val">−${fmt(c.rehabberProfit)}</span></div>
-          <div class="row"><span class="row-label">− Wholesale Fee</span><span class="row-val">−${fmt(f.wholesaleFee)}</span></div>
+          <div class="row"><span class="row-label">− Repair Cost${f.sqft > 0 ? ' (' + repairPerSf + '/sf)' : ''}</span><span class="row-val">${fmt(-(c.repairCost))}</span></div>
+          <div class="row"><span class="row-label">− Rehabber Profit</span><span class="row-val">${fmt(-(c.rehabberProfit))}</span></div>
+          <div class="row"><span class="row-label">− Wholesale Fee</span><span class="row-val">${fmt(-(f.wholesaleFee))}</span></div>
           <div class="row-divider">
             <div class="row row-bold"><span class="row-label">Wholesale MAO</span><span class="row-val">${fmt(c.wholesaleMAO)}</span></div>
             <div class="row row-bold"><span class="row-label">MAO : ARV</span><span class="row-val">${fmtPct(c.wholesaleMaoArv)}</span></div>
@@ -3927,8 +4349,8 @@
           <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--ink);">Atlas Novation Formula</h3>
           <div class="row"><span class="row-label">As-Is Value</span><span class="row-val">${fmt(f.asIsValue)}</span></div>
           <div class="row"><span class="row-label">× 88% (12% sale costs baked in)</span><span class="row-val">${fmt(f.asIsValue * 0.88)}</span></div>
-          <div class="row"><span class="row-label">− Repair Cost${f.sqft > 0 ? ' (' + repairPerSf + '/sf)' : ''}</span><span class="row-val">−${fmt(c.repairCost)}</span></div>
-          <div class="row"><span class="row-label">− Novation Profit</span><span class="row-val">−${fmt(f.novationProfit)}</span></div>
+          <div class="row"><span class="row-label">− Repair Cost${f.sqft > 0 ? ' (' + repairPerSf + '/sf)' : ''}</span><span class="row-val">${fmt(-(c.repairCost))}</span></div>
+          <div class="row"><span class="row-label">− Novation Profit</span><span class="row-val">${fmt(-(f.novationProfit))}</span></div>
           <div class="row-divider">
             <div class="row row-bold"><span class="row-label">Novation MAO</span><span class="row-val">${fmt(c.novationMAO)}</span></div>
             <div class="row row-bold"><span class="row-label">MAO : ARV</span><span class="row-val">${fmtPct(c.novationMaoArv)}</span></div>
@@ -4000,7 +4422,7 @@
               <div class="row"><span class="row-label">Loan Term</span><span class="row-val">${f.loanTerm} years</span></div>
               <div class="row-divider">
                 <div class="row row-bold"><span class="row-label">Monthly P&I</span><span class="row-val">${fmt(c.monthlyPI)}</span></div>
-                <div class="row row-bold"><span class="row-label">DSCR</span><span class="row-val">${c.dscr.toFixed(2)}x</span></div>
+                <div class="row row-bold"><span class="row-label">DSCR</span><span class="row-val">${dscrDisplay(c)}</span></div>
               </div>
             `
           }
@@ -4110,15 +4532,15 @@
           <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--ink);">DSCR Refi Exit</h3>
           <div class="row"><span class="row-label">ARV</span><span class="row-val">${fmt(f.arv)}</span></div>
           <div class="row"><span class="row-label">× Refi LTV (${f.brrrrRefiLtv}%)</span><span class="row-val">${fmt(b.refiLoan)}</span></div>
-          <div class="row"><span class="row-label">− Acq Loan Payoff</span><span class="row-val">−${fmt(b.acqLoan)}</span></div>
-          <div class="row"><span class="row-label">− Refi Closing (${f.brrrrRefiClosingPct}%)</span><span class="row-val">−${fmt(b.refiClosing)}</span></div>
+          <div class="row"><span class="row-label">− Acq Loan Payoff</span><span class="row-val">${fmt(-(b.acqLoan))}</span></div>
+          <div class="row"><span class="row-label">− Refi Closing (${f.brrrrRefiClosingPct}%)</span><span class="row-val">${fmt(-(b.refiClosing))}</span></div>
           <div class="row-divider">
-            <div class="row row-bold"><span class="row-label">Cash Out at Refi</span><span class="row-val" style="color:var(--good);">${fmt(b.cashOutAtRefi)}</span></div>
+            <div class="row row-bold"><span class="row-label">Cash Out at Refi</span><span class="row-val" style="color:${b.cashOutAtRefi >= 0 ? 'var(--good)' : 'var(--atlas-red)'};">${fmt(b.cashOutAtRefi)}</span></div>
           </div>
           <div class="row-divider">
             <div class="row"><span class="row-label">Refi Rate · Term</span><span class="row-val">${f.brrrrRefiRate}% · ${f.brrrrRefiTerm}yr</span></div>
             <div class="row"><span class="row-label">Monthly P&I (Refi)</span><span class="row-val">${fmt(b.refiMonthlyPI)}</span></div>
-            <div class="row"><span class="row-label">DSCR</span><span class="row-val">${c.dscr.toFixed(2)}x</span></div>
+            <div class="row"><span class="row-label">DSCR</span><span class="row-val">${dscrDisplay(c)}</span></div>
           </div>
         </div>
       </div>
@@ -4133,7 +4555,7 @@
           </div>
           <div>
             <div class="stat-label">Cash Out at Refi</div>
-            <div class="stat-val good">${fmt(b.cashOutAtRefi)}</div>
+            <div class="stat-val ${b.cashOutAtRefi >= 0 ? 'good' : 'bad'}">${fmt(b.cashOutAtRefi)}</div>
           </div>
           <div>
             <div class="stat-label">${fullyRecycled ? 'Recycled' : 'Cash Left in Deal'}</div>
@@ -4286,13 +4708,15 @@
     const subs = { wholesale: 'Wholesale Deal Analysis', novation: 'Novation Deal Analysis', brrrr: 'BRRRR Deal Analysis', rental: 'Investment Property Analysis', creative: 'Creative Finance Analysis' };
     document.getElementById('masthead-sub').textContent = subs[state.mode];
     document.getElementById('report-actions').classList.remove('hidden');
+    refreshMobileBar();
   }
 
   function editDeal() {
     document.getElementById('form-view').classList.remove('hidden');
     document.getElementById('report-view').classList.add('hidden');
-    document.getElementById('masthead-sub').textContent = 'Deal Analyzer · Wholesale · Novation · Rental';
+    document.getElementById('masthead-sub').textContent = 'Deal Analyzer · Wholesale · Novation · BRRRR · Rental · Creative';
     document.getElementById('report-actions').classList.add('hidden');
+    refreshMobileBar();
   }
 
   function render() {
@@ -4305,9 +4729,12 @@
   // Reads ?address=...&arv=...&as_is=...&mortgage=...&sqft=...&year=...&purchase=...&monthly_rent=...&contact_id=...&contact_name=...
   // Unknown params ignored. Missing params fall back to defaults. Mode always opens to Wholesale per spec.
   const ghlContext = { contactId: null, contactName: null, prefilled: false };
-  function ingestUrlParams() {
+  // opts.propertyFromHash: the #d= hash was saved on top of these same GHL params, so the property fields
+  // (including edits the user made since) come from the hash; only the contact context is read from the query.
+  function ingestUrlParams(opts) {
     const params = new URLSearchParams(window.location.search);
     if (params.toString().length === 0) return;
+    const propertyFromHash = !!(opts && opts.propertyFromHash);
     // Numeric URL param helper: returns null for empty/invalid input, number otherwise.
     // This is what makes "blank GHL field" → "blank analyzer field with placeholder" work.
     const num = (v) => {
@@ -4316,7 +4743,7 @@
       return isNaN(n) ? null : n;
     };
     const map = {
-      address:       v => state.form.address = decodeURIComponent(v),
+      address:       v => state.form.address = v,
       beds:          v => state.form.beds = num(v),
       baths:         v => state.form.baths = num(v),
       sqft:          v => state.form.sqft = num(v),
@@ -4324,7 +4751,7 @@
       arv:           v => state.form.arv = num(v),
       as_is:         v => state.form.asIsValue = num(v),
       mortgage:      v => { const n = num(v); state.form.mortgageBalance = n; if (n != null) state.form.cfSubAmount = n; },
-      purchase:      v => state.form.purchasePrice = parseFloat(v) || state.form.purchasePrice,
+      purchase:      v => { const n = parseFloat(v); if (n) { state.form.purchasePrice = n; state.form.purchasePriceTouched = true; } },   // touched, so Rental/BRRRR keep it instead of re-deriving from As-Is
       monthly_rent:  v => state.form.monthlyRent = parseFloat(v) || state.form.monthlyRent,
       // ----- Creative Finance: auto-fill from GHL mortgage section -----
       rate:          v => { const n = num(v); if (n != null) state.form.cfSubRate = n; },
@@ -4334,24 +4761,30 @@
       insurance:     v => { const n = num(v); if (n != null) state.form.cfInsuranceMonthly = n; },
       hoa:           v => { const n = num(v); if (n != null) state.form.cfHoaMonthly = n; },
       market_rent:   v => { const n = num(v); if (n != null) state.form.monthlyRent = n; },
-      contact_id:    v => ghlContext.contactId = decodeURIComponent(v),
+      contact_id:    v => ghlContext.contactId = v,
       contact_name:  v => {
-        const decoded = decodeURIComponent(v);
-        ghlContext.contactName = decoded;
-        state.form.sellerName = decoded;
+        ghlContext.contactName = v;
+        if (!propertyFromHash) state.form.sellerName = v;
       },
     };
     let anyApplied = false;
     for (const [key, raw] of params.entries()) {
-      const fn = map[key];
-      if (fn && raw) {
-        fn(raw);
-        if (key !== 'contact_id' && key !== 'contact_name') anyApplied = true;
+      try {
+        const fn = map[key];
+        if (fn && raw) {
+          const isContact = key === 'contact_id' || key === 'contact_name';
+          if (isContact || !propertyFromHash) fn(raw);
+          if (!isContact) anyApplied = true;   // still counts as a GHL launch (banner + ghl flag) when the hash wins
+        }
+      } catch (e) {
+        console.warn('ingestUrlParams: skipping malformed param "' + key + '"', e);
+        continue;
       }
     }
     ghlContext.prefilled = anyApplied;
   }
 
+  function escapeHTML(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch])); }
   function renderGhlBanner() {
     if (!ghlContext.prefilled) return;
     const banner = document.getElementById('ghl-banner');
@@ -4359,15 +4792,15 @@
     const name = ghlContext.contactName || 'GHL contact';
     banner.innerHTML = `
       <span class="ghl-banner-dot"></span>
-      <span class="ghl-banner-text">Pre-filled from GHL · <strong>${name}</strong></span>
-      ${ghlContext.contactId ? `<span class="ghl-banner-id">ID ${ghlContext.contactId.substring(0, 8)}…</span>` : ''}
+      <span class="ghl-banner-text">Pre-filled from GHL · <strong>${escapeHTML(name)}</strong></span>
+      ${ghlContext.contactId ? `<span class="ghl-banner-id">ID ${escapeHTML(ghlContext.contactId.substring(0, 8))}…</span>` : ''}
     `;
     banner.style.display = 'flex';
   }
 
-  // ============ SAVE TO GHL (Zapier webhook → Slack #underwriting) ============
-  // Separate Zap from the Chrome extension's contact-summary push. This Zap handles deal-level math.
-  // Replace this URL after creating the Zap (see hosting guide).
+  // ============ SAVE TO GHL (Make.com webhook → Slack #underwriting) ============
+  // Separate Make.com scenario from the Chrome extension's contact-summary push. This scenario handles deal-level math.
+  // Replace this URL after creating the Make.com scenario (see hosting guide).
   const ANALYZER_WEBHOOK_URL = 'https://hook.us2.make.com/u15vyv5j9ubkk42kgkmk55cx8s303jo7';
 
   async function saveDealToGhl(buttonEl) {
@@ -4375,6 +4808,7 @@
     const f = state.form;
     const mode = state.mode;
     const addr = f.address || '';
+    const pct2 = v => (typeof v === 'number' && !isFinite(v) && !isNaN(v)) ? (v > 0 ? 'infinite' : '-infinite') : Math.round((v || 0) * 100) / 100;   // percentages → 2 decimals; JSON has no Infinity
 
     // Build dedup key: sha-ish hash of address+mode+date (so re-saves same day don't dup-ping)
     const dedupSeed = `${addr}|${mode}|${new Date().toISOString().slice(0,10)}`;
@@ -4413,6 +4847,35 @@
         monthly_cash_flow: c.cashFlowMonthly,
         refi_loan: b.refiLoan,
       };
+    } else if (mode === 'creative') {
+      const cr = c.creative;
+      const exitKey = f.cfActiveExit;
+      const ex = exitKey === 'wrap' ? cr.wrap : exitKey === 'lease_option' ? cr.lease : cr.rental;
+      const exitLabel = exitKey === 'wrap' ? 'Wrap' : exitKey === 'lease_option' ? 'Lease Option' : 'Rental';
+      const acqLabel = f.cfAcqType === 'seller_finance' ? 'Seller Finance' : f.cfAcqType === 'hybrid' ? 'Hybrid' : 'SubTo';
+      primaryLabel = `Creative · ${acqLabel} → ${exitLabel} · Net/mo`;
+      primaryValue = ex.monthlyNet;
+      secondary = {
+        acq_type: f.cfAcqType,
+        active_exit: exitKey,
+        entry_fee: Math.round(cr.entryFee),
+        total_debt: Math.round(cr.totalDebt),
+        debt_service_monthly: Math.round(cr.totalDebtService),
+        monthly_carry: Math.round(cr.monthlyCarry),
+      };
+      if (f.cfWrapOn) {
+        secondary.wrap_net_monthly = Math.round(cr.wrap.monthlyNet);
+        secondary.wrap_coc_pct = pct2(cr.wrap.rorWithDP);
+        secondary.wrap_implied_rate_pct = pct2(cr.wrap.rate);
+      }
+      if (f.cfLoOn) {
+        secondary.lease_net_monthly = Math.round(cr.lease.monthlyNet);
+        secondary.lease_coc_pct = pct2(cr.lease.rorWithOF);
+      }
+      if (f.cfRentalOn) {
+        secondary.rental_net_monthly = Math.round(cr.rental.monthlyNet);
+        secondary.rental_coc_pct = pct2(cr.rental.ror);
+      }
     } else {
       primaryLabel = 'Rental · Monthly Cash Flow';
       primaryValue = c.cashFlowMonthly;
@@ -4439,6 +4902,7 @@
         address: f.address,
         beds: f.beds, baths: f.baths, sqft: f.sqft, year_built: f.yearBuilt,
         arv: f.arv, as_is: f.asIsValue, mortgage_balance: f.mortgageBalance,
+        seller_name: f.sellerName || null,
       },
       exit: mode,
       headline: {
@@ -4447,7 +4911,7 @@
         grade: (mode === 'brrrr' || mode === 'rental') ? c.grade : null,
         secondary,
       },
-      // Full calc for downstream extensibility — Zap can pull anything it needs
+      // Full calc for downstream extensibility — the Make scenario can pull anything it needs
       full_calc: {
         ws_mao: Math.round(c.wholesaleMAO),
         nov_mao: Math.round(c.novationMAO),
@@ -4471,6 +4935,54 @@
           refi_ltv_pct: f.brrrrRefiLtv,
           cash_out_at_refi: Math.round(c.brrrr.cashOutAtRefi),
           cash_left_in_deal: Math.round(c.brrrr.cashLeftInDeal),
+        } : null,
+        creative: c.creative ? {
+          acq_type: f.cfAcqType,
+          active_exit: f.cfActiveExit,
+          exits_on: { wrap: !!f.cfWrapOn, lease_option: !!f.cfLoOn, rental: !!f.cfRentalOn },
+          sf_amount: Math.round(f.cfSfAmount || 0),
+          sf_rate: pct2(f.cfSfRate),
+          sf_months: f.cfSfMonths || 0,
+          sf_balloon: f.cfSfBalloon || 0,
+          sub_amount: Math.round(f.cfSubAmount || 0),
+          sub_pi: Math.round(f.cfSubPI || 0),
+          sub_rate: pct2(f.cfSubRate),
+          cash_to_seller: Math.round(f.cfCashToSeller || 0),
+          arrears_liens: Math.round(f.cfArrearsLiens || 0),
+          cost_of_acq: Math.round(f.cfCostOfAcq || 0),
+          closing: Math.round(c.creative.closing),
+          renovation: Math.round(f.cfRenovation || 0),
+          marketing: Math.round(f.cfMarketing || 0),
+          maintenance_reserve: Math.round(c.creative.maintenance),
+          entry_fee: Math.round(c.creative.entryFee),
+          pl_on: c.creative.plOn,
+          pl_amount: Math.round(c.creative.plAmount),
+          pl_payment: Math.round(c.creative.plPayment),
+          total_debt: Math.round(c.creative.totalDebt),
+          note_payment: Math.round(c.creative.notePayment),
+          total_debt_service: Math.round(c.creative.totalDebtService),
+          wrap: {
+            price: Math.round(c.creative.wrap.price),
+            down: Math.round(c.creative.wrap.down),
+            financed: Math.round(c.creative.wrap.financed),
+            buyer_payment: Math.round(c.creative.wrap.allIn),
+            implied_rate_pct: pct2(c.creative.wrap.rate),
+            net_monthly: Math.round(c.creative.wrap.monthlyNet),
+            coc_after_down_pct: pct2(c.creative.wrap.rorWithDP),
+          },
+          lease: {
+            price: Math.round(c.creative.lease.price),
+            option_fee: Math.round(c.creative.lease.optionFee),
+            lease: Math.round(c.creative.lease.lease),
+            net_monthly: Math.round(c.creative.lease.monthlyNet),
+            coc_after_fee_pct: pct2(c.creative.lease.rorWithOF),
+          },
+          rental: {
+            gross: Math.round(c.creative.rental.gross),
+            expenses: Math.round(c.creative.rental.expenses),
+            net_monthly: Math.round(c.creative.rental.monthlyNet),
+            coc_pct: pct2(c.creative.rental.ror),
+          },
         } : null,
       },
     };
@@ -4509,7 +5021,7 @@
       console.error('[Atlas Analyzer] Save failed:', err);
       buttonEl.innerHTML = originalText;
       buttonEl.disabled = false;
-      showToast('Save failed — check console. Try again or open Zapier task history.', 'error');
+      showToast('Send failed — check the browser console, then retry. If it keeps failing, check the Make scenario history.', 'error');
     }
   }
 
@@ -4579,10 +5091,223 @@
     document.title = ORIGINAL_TITLE;
   });
 
-  ingestUrlParams();
+  // ============ PERSISTENCE (URL hash + localStorage) ============
+  // Every edit is debounced into location.hash ("#d=<url-safe base64 json>") and localStorage, so a
+  // refresh or a copied link restores the exact deal. No render function is touched: saves are triggered
+  // by document-level input/change/click listeners plus a MutationObserver (any re-render → save).
+  const SAVE_KEY = 'atlas-deal-analyzer:last';
+  let saveTimer = null;
+  let saveDisabled = false;   // set by newDeal() so a pending save can't resurrect the cleared deal
+
+  function serializeState() {
+    // ghl: true marks a deal that started from GHL params, so a reload / copied link of that page keeps the
+    // user's property-bar edits (hash) instead of letting the stale ?arv=... query re-override them.
+    // Only keys that differ from FORM_DEFAULTS are emitted (applyState merges over the defaults at init);
+    // rehab is diffed per mode per line as {rate, on}. view restores the report page from a copied link.
+    const form = {};
+    for (const key of Object.keys(state.form)) {
+      if (key === 'rehab') continue;
+      if (state.form[key] !== FORM_DEFAULTS[key]) form[key] = state.form[key];
+    }
+    const rehab = {};
+    for (const mode of Object.keys(state.form.rehab)) {
+      const defLines = FORM_DEFAULTS.rehab[mode] || {};
+      for (const k of Object.keys(state.form.rehab[mode])) {
+        const line = state.form.rehab[mode][k], def = defLines[k] || {};
+        if (line.rate !== def.rate || line.on !== def.on) (rehab[mode] = rehab[mode] || {})[k] = { rate: line.rate, on: line.on };
+      }
+    }
+    if (Object.keys(rehab).length) form.rehab = rehab;
+    const formView = document.getElementById('form-view');
+    const view = (formView && formView.classList.contains('hidden')) ? 'report' : 'form';
+    return { v: 1, mode: state.mode, step: state.step, form, ghl: !!ghlContext.prefilled, view };
+  }
+
+  function encodeState(obj) {
+    const json = JSON.stringify(obj);
+    return btoa(unescape(encodeURIComponent(json))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  function decodeState(str) {
+    try {
+      let b64 = String(str || '').replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      const obj = JSON.parse(decodeURIComponent(escape(atob(b64))));
+      return (obj && typeof obj === 'object') ? obj : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Scope tiers are mutually exclusive (see updateRehab); a restored deal could carry two — keep the first in order.
+  function normalizeRehabTiers() {
+    const SCOPE_TIERS = ['low_mid_cosmetic', 'mid_high_cosmetic', 'low_mid_gut', 'mid_high_gut'];
+    for (const mode of Object.keys(state.form.rehab)) {
+      const rb = state.form.rehab[mode];
+      let seen = false;
+      for (const k of SCOPE_TIERS) {
+        if (!rb[k] || !rb[k].on) continue;
+        if (seen) rb[k].on = false; else seen = true;
+      }
+    }
+  }
+
+  // Copies only keys that already exist in state.form, so fields added later keep their defaults.
+  // Each value is coerced to the type of its default (a corrupted / hand-edited link can't put a string into
+  // a number field); anything that doesn't fit keeps the current value.
+  // Rehab is merged per mode / per line (rate + on only) so labels and units stay code-owned.
+  function coerceLike(def, v, cur) {
+    const isNum = typeof v === 'number' && isFinite(v);
+    if (def === null) return (v === null || (isNum && v >= 0)) ? v : cur;   // property values are never negative
+    if (typeof def === 'number') return isNum ? v : cur;
+    if (typeof def === 'boolean') return typeof v === 'boolean' ? v : cur;
+    if (typeof def === 'string') return (typeof v === 'string' && v.length <= 500) ? v : cur;
+    return cur;
+  }
+  function applyState(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+    const src = obj.form;
+    if (src && typeof src === 'object') {
+      for (const key of Object.keys(state.form)) {
+        if (!has(src, key)) continue;
+        if (key !== 'rehab') { state.form[key] = coerceLike(FORM_DEFAULTS[key], src[key], state.form[key]); continue; }
+        const rehab = src.rehab;
+        if (!rehab || typeof rehab !== 'object') continue;
+        for (const mode of Object.keys(state.form.rehab)) {
+          const lines = rehab[mode];
+          if (!lines || typeof lines !== 'object') continue;
+          for (const lineKey of Object.keys(state.form.rehab[mode])) {
+            const line = lines[lineKey];
+            if (!line || typeof line !== 'object') continue;
+            const dst = state.form.rehab[mode][lineKey];
+            if (has(line, 'rate') && typeof line.rate === 'number' && isFinite(line.rate)) dst.rate = Math.max(0, line.rate);
+            if (has(line, 'on') && typeof line.on === 'boolean') dst.on = line.on;
+          }
+        }
+      }
+    }
+    if (typeof obj.mode === 'string' && has(STEP_CONFIGS, obj.mode)) state.mode = obj.mode;
+    const step = parseInt(obj.step, 10);
+    if (step >= 1 && step <= STEP_CONFIGS[state.mode].length) state.step = step;
+    normalizeRehabTiers();
+    return true;
+  }
+
+  function persistNow() {
+    saveTimer = null;
+    if (saveDisabled) return;
+    let snapshot;
+    try { snapshot = serializeState(); } catch (e) { return; }
+    try { history.replaceState(null, '', location.pathname + location.search + '#d=' + encodeState(snapshot)); } catch (e) {}
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot)); } catch (e) {}
+  }
+  function scheduleSave() {
+    if (saveDisabled) return;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(persistNow, 400);
+  }
+  function flushSave() {
+    if (saveTimer) clearTimeout(saveTimer);
+    persistNow();
+  }
+  document.addEventListener('input', scheduleSave, true);
+  document.addEventListener('change', scheduleSave, true);
+  document.addEventListener('click', scheduleSave, true);
+  // A debounced save can still be pending on a fast refresh / tab close — flush it
+  window.addEventListener('pagehide', flushSave);
+  window.addEventListener('beforeunload', flushSave);
+
+  function copyLink() {
+    flushSave();
+    const url = location.href;
+    const done = () => showToast('Link copied — it restores this exact deal.', 'success');
+    const fallback = () => {
+      let ok = false;
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) { ok = false; }
+      if (ok) done(); else showToast('Could not copy — use the address bar URL instead.', 'error');
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  function newDeal() {
+    if (!confirm('Start a new deal? This clears the current inputs.')) return;
+    saveDisabled = true;
+    if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+    try { localStorage.removeItem(SAVE_KEY); } catch (e) {}
+    location.replace(location.pathname);
+  }
+
+  // Restore banner — reuses the #ghl-banner element/styles. Only shown when the deal came from localStorage.
+  function renderRestoreBanner() {
+    const banner = document.getElementById('ghl-banner');
+    if (!banner) return;
+    const addr = (state.form.address || '').trim();
+    const label = addr ? escapeHTML(addr) : 'Untitled deal';
+    banner.innerHTML = `
+      <span class="ghl-banner-dot"></span>
+      <span class="ghl-banner-text">Restored your last deal · <strong>${label}</strong></span>
+      <button type="button" onclick="document.getElementById('ghl-banner').style.display = 'none'">Keep</button>
+      <button type="button" onclick="newDeal()">Start new deal</button>
+    `;
+    banner.style.display = 'flex';
+  }
+
+  function restoreFromStorage() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(SAVE_KEY)); } catch (e) { saved = null; }
+    if (!saved || typeof saved !== 'object' || !saved.form) return false;
+    applyState(saved);
+    renderRestoreBanner();
+    return true;
+  }
+
+  // ============ INIT ============
+  // Precedence: shared link (#d=) → GHL deep link (?params on fresh defaults) → last local deal → defaults.
+  // With a shared link, explicit GHL params still override the property fields — unless the hash was itself saved
+  // on a GHL-launched page (ghl: true), in which case the hash holds the user's edits and the query only supplies
+  // the contact context (banner / save payload).
+  let restoredView = null;                                     // 'report' when the shared link was copied from the report page
+  if (location.hash.indexOf('#d=') === 0) {
+    const shared = decodeState(location.hash.slice(3));
+    const propertyFromHash = !!(applyState(shared) && shared.ghl);
+    if (shared && shared.view === 'report') restoredView = 'report';
+    try { ingestUrlParams({ propertyFromHash }); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
+  } else if (location.search.length > 1) {
+    try { ingestUrlParams(); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
+  } else {
+    restoreFromStorage();
+  }
   bindPropertyBar();
-  setMode('wholesale');
+  const initialStep = state.step;                              // setMode() resets step to 1
+  const initialPurchasePrice = state.form.purchasePrice;       // setMode() re-derives it from As-Is for rental/BRRRR
+  setMode(state.mode);
+  state.form.purchasePrice = initialPurchasePrice;
+  goToStep(initialStep);
   renderGhlBanner();
+  if (restoredView === 'report') generateReport();
+  // Programmatic state changes (update(), updateRehab(), mode/step switches) always re-render into #form-view or
+  // #report-view, so watch those roots instead of editing each render function. Scoped to the app roots (not body)
+  // and started after init, so parser-appended nodes or browser extensions never persist an untouched load.
+  const saveObserver = new MutationObserver(scheduleSave);
+  ['form-view', 'report-view'].forEach(id => {
+    const root = document.getElementById(id);
+    if (root) saveObserver.observe(root, { childList: true, subtree: true, characterData: true });
+  });
 </script>
 
 </body>
