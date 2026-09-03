@@ -1979,7 +1979,7 @@
             state.form[key] = zeroWhenBlank.includes(key) ? 0 : null;
           } else {
             state.form[key] = isMoney ? parseNum(raw) : (parseFloat(raw) || 0);
-            if (key === 'sqft' && state.form[key] < 0) state.form[key] = 0;
+            if ((key === 'sqft' || key === 'sellerNet' || key === 'cfArrearsLiens') && state.form[key] < 0) state.form[key] = 0;
           }
           if (key === 'asIsValue' && (state.mode === 'rental' || state.mode === 'brrrr')) {
             syncPurchasePriceFromAsIs();
@@ -3546,7 +3546,7 @@
         </div>
         <div>
           <label class="field-label">Arrears / Liens</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfArrearsLiens)}" oninput="update('cfArrearsLiens', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfArrearsLiens)}" oninput="update('cfArrearsLiens', Math.max(0, parseNum(this.value)))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Back payments, code liens, etc.</div>
         </div>
         <div>
@@ -4811,12 +4811,12 @@
       purchase:      v => { const n = parseFloat(v); if (n) { state.form.purchasePrice = n; state.form.purchasePriceTouched = true; } },   // touched, so Rental/BRRRR keep it instead of re-deriving from As-Is
       monthly_rent:  v => { const n = num(v); if (n != null) state.form.monthlyRent = n; },
       // Seller Bottom Dollar = required NET proceeds after the mortgage + liens are paid off (not a purchase price)
-      bottom_dollar: v => { const n = num(v); if (n != null) state.form.sellerNet = n; },
-      asking:        v => { const n = num(v); if (n != null && state.form.sellerNet == null) state.form.sellerNet = n; },   // legacy alias for bottom_dollar
+      bottom_dollar: v => { const n = num(v); if (n != null && n >= 0) state.form.sellerNet = n; },
+      asking:        v => { const n = num(v); if (n != null && n >= 0 && state.form.sellerNet == null) state.form.sellerNet = n; },   // legacy alias for bottom_dollar
       // ----- Creative Finance: auto-fill from GHL mortgage section -----
       rate:          v => { const n = num(v); if (n != null) state.form.cfSubRate = n; },
       monthly_pi:    v => { const n = num(v); if (n != null) state.form.cfSubPI = n; },
-      arrears:       v => { const n = num(v); if (n != null) state.form.cfArrearsLiens = n; },
+      arrears:       v => { const n = num(v); if (n != null && n >= 0) state.form.cfArrearsLiens = n; },
       // Monthly carry from GHL fans out to the rental/BRRRR expense fields too (annual = monthly × 12)
       taxes:         v => { const n = num(v); if (n != null) { state.form.cfTaxesMonthly = n; state.form.propertyTaxAnnual = n * 12; } },
       insurance:     v => { const n = num(v); if (n != null) { state.form.cfInsuranceMonthly = n; state.form.insuranceAnnual = n * 12; } },
@@ -5237,7 +5237,11 @@
     if (src && typeof src === 'object') {
       for (const key of Object.keys(state.form)) {
         if (!has(src, key)) continue;
-        if (key !== 'rehab') { state.form[key] = coerceLike(FORM_DEFAULTS[key], src[key], state.form[key]); continue; }
+        if (key !== 'rehab') {
+          const v = coerceLike(FORM_DEFAULTS[key], src[key], state.form[key]);
+          if (!(key === 'cfArrearsLiens' && v < 0)) state.form[key] = v;   // arrears default to 0, so coerceLike's negative guard (null-default fields) does not cover them
+          continue;
+        }
         const rehab = src.rehab;
         if (!rehab || typeof rehab !== 'object') continue;
         for (const mode of Object.keys(state.form.rehab)) {
