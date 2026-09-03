@@ -2983,6 +2983,45 @@
     `;
   }
 
+  // ---- Underwriting flags: ONE source for the form-view chips and the report's "Underwriting Flags" card ----
+  // DSCR only means something when there is debt service AND income; otherwise show "—" and no chip.
+  function dscrDisplay(c) { return (c.monthlyPI > 0 && c.grossMonthly > 0) ? c.dscr.toFixed(2) + 'x' : '—'; }
+  function isLowDscr(c) { return c.monthlyPI > 0 && c.grossMonthly > 0 && c.dscr < 1.2; }
+  const DSCR_FLAG = 'DSCR below 1.20 — most DSCR lenders will not fund this loan as structured.';
+  // BRRRR refi chip: needs an ARV to size the refi at all; only then can the loan fall short.
+  function refiShortfallChip(c) {
+    const b = c.brrrr;
+    if (!b) return '';
+    if (!(state.form.arv > 0)) return warnChip('Enter ARV to size the refi.');
+    return b.cashOutAtRefi < 0 ? warnChip('Refi loan does not cover the acquisition loan payoff and closing — short by ' + fmt(-b.cashOutAtRefi) + '.', true) : '';
+  }
+  // Returns [{ key, text, danger }] for the current mode. Keys let a view skip a flag it already shows another way.
+  function underwritingFlags(c) {
+    const f = state.form, mode = state.mode, flags = [];
+    const rb = getRehab(mode) || {};
+    const sqftLineOn = Object.keys(rb).some(k => rb[k].on && rb[k].unit === 'sqft');
+    const b = c.brrrr;
+    if (mode === 'wholesale' || mode === 'novation') {
+      const mao = mode === 'wholesale' ? c.wholesaleMAO : c.novationMAO;
+      const hasValue = mode === 'wholesale' ? f.arv > 0 : f.asIsValue > 0;
+      const mortgage = f.mortgageBalance || 0;
+      if (!hasValue) flags.push({ key: 'missing-value', text: mode === 'wholesale' ? 'ARV is missing — enter it to price this deal.' : 'As-Is value is missing — enter it to price this deal.', danger: false });
+      if (hasValue && !(f.sqft > 0) && sqftLineOn) flags.push({ key: 'sqft', text: 'Square feet is blank — $/sf rehab lines are counting as $0, so this MAO is overstated.', danger: false });
+      if (mortgage > 0 && mao > 0 && mao < mortgage) flags.push({ key: 'mortgage', text: 'MAO is ' + fmt(mortgage - mao) + ' below the mortgage payoff — the seller cannot close at this price without a short sale or bringing cash.', danger: true });
+    } else if (mode === 'rental' || mode === 'brrrr') {
+      const hasRent = f.monthlyRent > 0;
+      if (mode === 'brrrr' && !(f.arv > 0)) flags.push({ key: 'missing-value', text: 'Enter ARV to size the refi.', danger: false });
+      if (mode === 'brrrr' && f.arv > 0 && !(f.sqft > 0) && sqftLineOn) flags.push({ key: 'sqft', text: 'Square feet is blank — $/sf rehab lines are counting as $0, so the rehab budget is understated.', danger: false });
+      if (!hasRent) flags.push({ key: 'rent', text: 'Enter market rent to grade this deal.', danger: false });
+      if (hasRent && isLowDscr(c)) flags.push({ key: 'dscr', text: DSCR_FLAG, danger: true });
+      if (mode === 'brrrr' && f.arv > 0 && b && b.cashOutAtRefi < 0) flags.push({ key: 'refi', text: 'Refi loan does not cover the acquisition loan payoff and closing — short by ' + fmt(-b.cashOutAtRefi) + '.', danger: true });
+    }
+    return flags;
+  }
+  function flagChipsHTML(c, skipKeys) {
+    return underwritingFlags(c).filter(fl => !(skipKeys || []).includes(fl.key)).map(fl => warnChip(fl.text, fl.danger)).join('');
+  }
+
   // Inline underwriting warning chip — returns '' when there is nothing to say
   function warnChip(text, danger) {
     if (!text) return '';
@@ -2996,13 +3035,8 @@
     // The driving value (ARV for wholesale, As-Is for novation) — no value, no price
     const hasValue = mode === 'wholesale' ? f.arv > 0 : f.asIsValue > 0;
     const eyebrow = `<div class="eyebrow">${mode === 'wholesale' ? 'Wholesale' : 'Novation'} Max Allowable Offer</div>`;
-    // Inline underwriting warnings — rendered under the callout and rebuilt with it
-    const rb = getRehab(mode) || {};
-    const sqftLineOn = Object.keys(rb).some(k => rb[k].on && rb[k].unit === 'sqft');
-    const warnings = [
-      (hasValue && !(f.sqft > 0) && sqftLineOn) ? warnChip('Square feet is blank — $/sf rehab lines are counting as $0, so this MAO is overstated.') : '',
-      (mortgage > 0 && mao > 0 && mao < mortgage) ? warnChip('MAO is ' + fmt(mortgage - mao) + ' below the mortgage payoff — the seller cannot close at this price without a short sale or bringing cash.', true) : ''
-    ].join('');
+    // Inline underwriting warnings — rendered under the callout and rebuilt with it (shared with the report)
+    const warnings = flagChipsHTML(c, ['missing-value']);
     if (!hasValue) {
       return `
       <div id="offer-block">
@@ -3204,7 +3238,7 @@
     const b = c.brrrr;
     if (!b) return rentalStatsCardHTML(c);
     const fullyRecycled = b.cashLeftInDeal <= 0;
-    const lowDscr = c.monthlyPI > 0 && c.dscr < 1.2;
+    const lowDscr = isLowDscr(c);
     return `
       <div class="preview-card">
         <div class="preview-head">
@@ -3220,19 +3254,17 @@
             <div class="preview-stat"><span class="preview-stat-label">Post-Refi CoC</span><span class="preview-stat-val ${c.cashOnCash >= 8 ? 'good' : c.cashOnCash < 4 ? 'bad' : ''}">${fullyRecycled ? '∞' : fmtPct(c.cashOnCash)}</span></div>
             <div class="preview-stat"><span class="preview-stat-label">Cap Rate (on ARV)</span><span class="preview-stat-val">${fmtPct(c.capRate)}</span></div>
             <div class="preview-stat"><span class="preview-stat-label">Monthly Cash Flow</span><span class="preview-stat-val ${c.cashFlowMonthly > 0 ? 'good' : 'bad'}">${fmt(c.cashFlowMonthly)}</span></div>
-            <div class="preview-stat"><span class="preview-stat-label">DSCR (post-refi)</span><span class="preview-stat-val ${lowDscr ? 'bad' : ''}">${c.dscr.toFixed(2)}x</span></div>
+            <div class="preview-stat"><span class="preview-stat-label">DSCR (post-refi)</span><span class="preview-stat-val ${lowDscr ? 'bad' : ''}">${dscrDisplay(c)}</span></div>
           </div>
         </div>
-        ${b.cashOutAtRefi < 0 ? warnChip('Refi loan does not cover the acquisition loan payoff and closing — short by ' + fmt(-b.cashOutAtRefi) + '.', true) : ''}
-        ${lowDscr ? warnChip('DSCR below 1.20 — most DSCR lenders will not fund this loan as structured.', true) : ''}
+        ${flagChipsHTML(c)}
       </div>
     `;
   }
 
   function rentalStatsCardHTML(c) {
     const f = state.form;
-    const hasRent = f.monthlyRent > 0;
-    const lowDscr = c.monthlyPI > 0 && c.dscr < 1.2;
+    const lowDscr = isLowDscr(c);
     return `
       <div class="preview-card">
         <div class="preview-head">
@@ -3243,7 +3275,7 @@
           <div class="preview-stat"><span class="preview-stat-label">Monthly Cash Flow</span><span class="preview-stat-val ${c.cashFlowMonthly > 0 ? 'good' : 'bad'}">${fmt(c.cashFlowMonthly)}</span></div>
           <div class="preview-stat"><span class="preview-stat-label">Cash-on-Cash</span><span class="preview-stat-val">${fmtPct(c.cashOnCash)}</span></div>
           <div class="preview-stat"><span class="preview-stat-label">Cap Rate</span><span class="preview-stat-val">${fmtPct(c.capRate)}</span></div>
-          <div class="preview-stat"><span class="preview-stat-label">DSCR</span><span class="preview-stat-val ${lowDscr ? 'bad' : ''}">${c.dscr.toFixed(2)}x</span></div>
+          <div class="preview-stat"><span class="preview-stat-label">DSCR</span><span class="preview-stat-val ${lowDscr ? 'bad' : ''}">${dscrDisplay(c)}</span></div>
           <div class="preview-stat"><span class="preview-stat-label">Instant Equity</span><span class="preview-stat-val ${c.instantEquity > 0 ? 'good' : 'bad'}">${fmt(c.instantEquity)}</span></div>
           <div class="preview-divider">
             <div class="preview-stat"><span class="preview-stat-label">NOI (Annual)</span><span class="preview-stat-val">${fmt(c.noiAnnual)}</span></div>
@@ -3252,8 +3284,7 @@
             ${f.includeAtlasFee ? `<div class="preview-stat"><span class="preview-stat-label" style="font-style:italic;font-size:9px;">* incl. ${fmt(f.atlasFeeAmount)} Atlas fee</span><span></span></div>` : ''}
           </div>
         </div>
-        ${!hasRent ? warnChip('Enter market rent to grade this deal.') : ''}
-        ${hasRent && lowDscr ? warnChip('DSCR below 1.20 — most DSCR lenders will not fund this loan as structured.', true) : ''}
+        ${flagChipsHTML(c)}
       </div>
     `;
   }
@@ -3978,10 +4009,10 @@
       el.textContent = present ? text : '';
       el.style.display = present ? '' : 'none';
     };
-    setSpec('rpt-beds', f.beds != null, `${f.beds} BD`);
-    setSpec('rpt-baths', f.baths != null, `${f.baths} BA`);
+    setSpec('rpt-beds', f.beds > 0, `${f.beds} BD`);
+    setSpec('rpt-baths', f.baths > 0, `${f.baths} BA`);
     setSpec('rpt-sqft', f.sqft > 0, `${(f.sqft || 0).toLocaleString()} SF`);
-    setSpec('rpt-year', f.yearBuilt != null, `Built ${f.yearBuilt}`);
+    setSpec('rpt-year', f.yearBuilt > 0, `Built ${f.yearBuilt}`);
     let pendingDivider = null, anySpecVisible = false;
     Array.from(document.getElementById('rpt-beds').parentElement.children).forEach(ch => {
       if (ch.classList.contains('spec-divider')) {
@@ -4088,8 +4119,8 @@
         </div>
         <div class="key-metric">
           <div class="key-metric-label">Cash Out @ Refi</div>
-          <div class="key-metric-val accent">${fmt(b ? b.cashOutAtRefi : 0)}</div>
-          <div class="key-metric-sub">recycled capital</div>
+          <div class="key-metric-val ${(b ? b.cashOutAtRefi : 0) < 0 ? 'bad' : 'accent'}">${fmt(b ? b.cashOutAtRefi : 0)}</div>
+          <div class="key-metric-sub">${(b ? b.cashOutAtRefi : 0) < 0 ? 'refi shortfall' : 'recycled capital'}</div>
         </div>
       `;
       sections.innerHTML = brrrrReportSectionsHTML(c);
@@ -4154,6 +4185,16 @@
         </div>
       `;
       sections.innerHTML = rentalReportSectionsHTML(c);
+    }
+    // Underwriting flags — same conditions as the form-view chips, so the report never hides a warning
+    const flags = underwritingFlags(c);
+    if (flags.length) {
+      sections.insertAdjacentHTML('afterbegin', `
+      <div class="card" id="rpt-flags">
+        <div class="section-eyebrow">Underwriting Flags</div>
+        <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 4px; color: var(--ink);">Review before sending</h3>
+        ${flags.map(fl => warnChip(fl.text, fl.danger)).join('')}
+      </div>`);
     }
 
     document.querySelectorAll('.rpt-date').forEach(el => {
@@ -4295,7 +4336,7 @@
               <div class="row"><span class="row-label">Loan Term</span><span class="row-val">${f.loanTerm} years</span></div>
               <div class="row-divider">
                 <div class="row row-bold"><span class="row-label">Monthly P&I</span><span class="row-val">${fmt(c.monthlyPI)}</span></div>
-                <div class="row row-bold"><span class="row-label">DSCR</span><span class="row-val">${c.dscr.toFixed(2)}x</span></div>
+                <div class="row row-bold"><span class="row-label">DSCR</span><span class="row-val">${dscrDisplay(c)}</span></div>
               </div>
             `
           }
@@ -4408,12 +4449,12 @@
           <div class="row"><span class="row-label">− Acq Loan Payoff</span><span class="row-val">${fmt(-(b.acqLoan))}</span></div>
           <div class="row"><span class="row-label">− Refi Closing (${f.brrrrRefiClosingPct}%)</span><span class="row-val">${fmt(-(b.refiClosing))}</span></div>
           <div class="row-divider">
-            <div class="row row-bold"><span class="row-label">Cash Out at Refi</span><span class="row-val" style="color:var(--good);">${fmt(b.cashOutAtRefi)}</span></div>
+            <div class="row row-bold"><span class="row-label">Cash Out at Refi</span><span class="row-val" style="color:${b.cashOutAtRefi >= 0 ? 'var(--good)' : 'var(--atlas-red)'};">${fmt(b.cashOutAtRefi)}</span></div>
           </div>
           <div class="row-divider">
             <div class="row"><span class="row-label">Refi Rate · Term</span><span class="row-val">${f.brrrrRefiRate}% · ${f.brrrrRefiTerm}yr</span></div>
             <div class="row"><span class="row-label">Monthly P&I (Refi)</span><span class="row-val">${fmt(b.refiMonthlyPI)}</span></div>
-            <div class="row"><span class="row-label">DSCR</span><span class="row-val">${c.dscr.toFixed(2)}x</span></div>
+            <div class="row"><span class="row-label">DSCR</span><span class="row-val">${dscrDisplay(c)}</span></div>
           </div>
         </div>
       </div>
@@ -4428,7 +4469,7 @@
           </div>
           <div>
             <div class="stat-label">Cash Out at Refi</div>
-            <div class="stat-val good">${fmt(b.cashOutAtRefi)}</div>
+            <div class="stat-val ${b.cashOutAtRefi >= 0 ? 'good' : 'bad'}">${fmt(b.cashOutAtRefi)}</div>
           </div>
           <div>
             <div class="stat-label">${fullyRecycled ? 'Recycled' : 'Cash Left in Deal'}</div>
