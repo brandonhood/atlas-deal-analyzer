@@ -4577,9 +4577,12 @@
   // Reads ?address=...&arv=...&as_is=...&mortgage=...&sqft=...&year=...&purchase=...&monthly_rent=...&contact_id=...&contact_name=...
   // Unknown params ignored. Missing params fall back to defaults. Mode always opens to Wholesale per spec.
   const ghlContext = { contactId: null, contactName: null, prefilled: false };
-  function ingestUrlParams() {
+  // opts.propertyFromHash: the #d= hash was saved on top of these same GHL params, so the property fields
+  // (including edits the user made since) come from the hash; only the contact context is read from the query.
+  function ingestUrlParams(opts) {
     const params = new URLSearchParams(window.location.search);
     if (params.toString().length === 0) return;
+    const propertyFromHash = !!(opts && opts.propertyFromHash);
     // Numeric URL param helper: returns null for empty/invalid input, number otherwise.
     // This is what makes "blank GHL field" → "blank analyzer field with placeholder" work.
     const num = (v) => {
@@ -4609,7 +4612,7 @@
       contact_id:    v => ghlContext.contactId = v,
       contact_name:  v => {
         ghlContext.contactName = v;
-        state.form.sellerName = v;
+        if (!propertyFromHash) state.form.sellerName = v;
       },
     };
     let anyApplied = false;
@@ -4617,8 +4620,9 @@
       try {
         const fn = map[key];
         if (fn && raw) {
-          fn(raw);
-          if (key !== 'contact_id' && key !== 'contact_name') anyApplied = true;
+          const isContact = key === 'contact_id' || key === 'contact_name';
+          if (isContact || !propertyFromHash) fn(raw);
+          if (!isContact) anyApplied = true;   // still counts as a GHL launch (banner + ghl flag) when the hash wins
         }
       } catch (e) {
         console.warn('ingestUrlParams: skipping malformed param "' + key + '"', e);
@@ -4944,7 +4948,9 @@
   let saveDisabled = false;   // set by newDeal() so a pending save can't resurrect the cleared deal
 
   function serializeState() {
-    return { v: 1, mode: state.mode, step: state.step, form: state.form };
+    // ghl: true marks a deal that started from GHL params, so a reload / copied link of that page keeps the
+    // user's property-bar edits (hash) instead of letting the stale ?arv=... query re-override them.
+    return { v: 1, mode: state.mode, step: state.step, form: state.form, ghl: !!ghlContext.prefilled };
   }
 
   function encodeState(obj) {
@@ -5074,10 +5080,13 @@
 
   // ============ INIT ============
   // Precedence: shared link (#d=) → GHL deep link (?params on fresh defaults) → last local deal → defaults.
-  // With a shared link, explicit GHL params still override the property fields.
+  // With a shared link, explicit GHL params still override the property fields — unless the hash was itself saved
+  // on a GHL-launched page (ghl: true), in which case the hash holds the user's edits and the query only supplies
+  // the contact context (banner / save payload).
   if (location.hash.indexOf('#d=') === 0) {
-    applyState(decodeState(location.hash.slice(3)));
-    try { ingestUrlParams(); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
+    const shared = decodeState(location.hash.slice(3));
+    const propertyFromHash = !!(applyState(shared) && shared.ghl);
+    try { ingestUrlParams({ propertyFromHash }); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
   } else if (location.search.length > 1) {
     try { ingestUrlParams(); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
   } else {
