@@ -402,7 +402,7 @@
     font-style: italic;
   }
 
-  input.text-input, input.num-input {
+  input.text-input, input.num-input, select.text-input {
     width: 100%;
     padding: 10px 12px;
     background: var(--surface);
@@ -413,11 +413,23 @@
     font-size: 14px;
     transition: all 0.15s;
   }
-  input.text-input:focus, input.num-input:focus {
+  input.text-input:focus, input.num-input:focus, select.text-input:focus {
     outline: none;
     border-color: var(--atlas-red);
     box-shadow: 0 0 0 3px var(--atlas-red-soft);
   }
+  /* Selects share the input look; replace the native arrow with a small chevron */
+  select.text-input {
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    padding-right: 36px;
+    line-height: normal;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+  }
+  select.text-input:hover { border-color: var(--atlas-red); }
 
   .input-money, .input-pct { position: relative; }
   .input-money input { padding-left: 26px; }
@@ -2813,7 +2825,7 @@
           <p class="section-sub">How you're funding the buy + rehab during the seasoning period (before refi).</p>
           <div class="field-group">
             <label class="field-label">Acquisition Type</label>
-            <select class="text-input" onchange="update('brrrrAcqType', this.value)" style="cursor:pointer;">
+            <select class="text-input" onchange="update('brrrrAcqType', this.value)">
               <option value="cash" ${acqType === 'cash' ? 'selected' : ''}>Cash — no acquisition loan</option>
               <option value="hard_money" ${acqType === 'hard_money' ? 'selected' : ''}>Hard Money — short-term, interest-only</option>
               <option value="private" ${acqType === 'private' ? 'selected' : ''}>Private Lender — custom terms</option>
