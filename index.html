@@ -1904,6 +1904,8 @@
   };
   const fmtPct = (n) => {
     if (n === undefined || n === null || isNaN(n)) return "0.0%";
+    if (n === Infinity) return "∞";
+    if (n === -Infinity) return "−∞";
     const s = Math.abs(n).toFixed(1);
     return (n < 0 && s !== "0.0" ? "−" : "") + s + "%";
   };
@@ -2164,6 +2166,11 @@
     }
     return ((lo + hi) / 2) * 12 * 100;
   }
+  // Cash-on-cash: only meaningful against a positive cash basis. When the buyer's down payment / option fee
+  // exceeds the entry fee there is no cash left in the deal — a positive return is infinite, not negative.
+  function cfRor(annual, basis) {
+    return basis > 0 ? (annual / basis) * 100 : (annual > 0 ? Infinity : 0);
+  }
   function computeCreative(f) {
     const acqNotePayment = cfNotePayment(f);
     const totalDebt      = cfTotalDebt(f);
@@ -2235,8 +2242,8 @@
       allIn: wrapAllIn, escrow: wrapEscrow, pi: wrapPI, buyerPmt: wrapPI,
       rate: wrapRate, minRate: (f.cfWrapMinRate||0), belowFloor: (wrapPI > 0 && wrapRate < (f.cfWrapMinRate||0)),
       monthlyNet: wrapNet, annualNet: wrapAnnual,
-      rorWithDP:    wrapBasisDP !== 0 ? (wrapAnnual / wrapBasisDP) * 100 : 0,
-      rorWithoutDP: entryFee   !== 0 ? (wrapAnnual / entryFee)   * 100 : 0,
+      rorWithDP:    cfRor(wrapAnnual, wrapBasisDP),
+      rorWithoutDP: cfRor(wrapAnnual, entryFee),
     };
 
     // ----- LEASE OPTION exit -----
@@ -2247,8 +2254,8 @@
     const lease = {
       price: loPriceEff, optionFee: (f.cfLoOptionFee||0), lease: leaseAmt,
       monthlyNet: loNet, annualNet: loAnnual,
-      rorWithOF:    loBasisOF !== 0 ? (loAnnual / loBasisOF) * 100 : 0,
-      rorWithoutOF: entryFee  !== 0 ? (loAnnual / entryFee)  * 100 : 0,
+      rorWithOF:    cfRor(loAnnual, loBasisOF),
+      rorWithoutOF: cfRor(loAnnual, entryFee),
     };
 
     // ----- RENTAL exit -----
@@ -2264,7 +2271,7 @@
     const rental = {
       gross: rentGross, mgmt: rentMgmt, maint: rentMaint, capex: rentCapex, vacancy: rentVacancy,
       expenses: rentExpenses, monthlyNet: rentNet, annualNet: rentNet * 12,
-      ror: entryFee !== 0 ? ((rentNet * 12) / entryFee) * 100 : 0,
+      ror: cfRor(rentNet * 12, entryFee),
     };
 
     return { notePayment, acqNotePayment, totalDebt, purchasePrice, closing, piti, plOn: !!f.cfPlOn, plAmount, plPayment, totalDebtService, monthlyCarry, maintenance, entryFee, wrap, lease, rental };
@@ -4667,7 +4674,7 @@
     const f = state.form;
     const mode = state.mode;
     const addr = f.address || '';
-    const pct2 = v => Math.round((v || 0) * 100) / 100;   // percentages → 2 decimals
+    const pct2 = v => (typeof v === 'number' && !isFinite(v) && !isNaN(v)) ? (v > 0 ? 'infinite' : '-infinite') : Math.round((v || 0) * 100) / 100;   // percentages → 2 decimals; JSON has no Infinity
 
     // Build dedup key: sha-ish hash of address+mode+date (so re-saves same day don't dup-ping)
     const dedupSeed = `${addr}|${mode}|${new Date().toISOString().slice(0,10)}`;
