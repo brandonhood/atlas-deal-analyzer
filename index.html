@@ -1956,7 +1956,12 @@
   // Formatted money/number inputs: parse "250,000" -> 250000; render 250000 -> "250,000"
   const parseNum = v => { if (v == null) return 0; const s = String(v).replace(/[^0-9.\-]/g, ""); const n = parseFloat(s); return isNaN(n) ? 0 : n; };
   const fmtInput = n => (n == null || n === "" || isNaN(n)) ? "" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
-  function fmtOnBlur(el) { el.value = el.value.trim() === "" ? "" : fmtInput(parseNum(el.value)); }
+  function fmtOnBlur(el) {
+    if (el.value.trim() === "") { el.value = ""; return; }
+    let n = parseNum(el.value);
+    if (n < 0 && el.closest && el.closest(".input-money")) n = 0;   // money inputs are never negative; mirror the state clamp
+    el.value = fmtInput(n === 0 ? 0 : n);                              // n === 0 also catches -0 → "0" not "-0"
+  }
 
   // One rent number, mirrored across every visible rent input (property bar + creative + rental + brrrr)
   function syncRentInputs(n, src) {
@@ -4333,7 +4338,7 @@
 
   // Report Property Snapshot helpers (wholesale + novation): payoff / bottom-dollar rows, net-to-seller graded against the bottom dollar
   function snapshotPayoffRowsHTML(f) {
-    return ((f.cfArrearsLiens || 0) > 0 ? `<div class="row"><span class="row-label">Payoff (mortgage + liens)</span><span class="row-val">${fmt(sellerPayoff(f))}</span></div>` : '')
+    return ((f.cfArrearsLiens || 0) > 0 ? `<div class="row"><span class="row-label">Payoff (${payoffLabel(f).replace(' payoff', '')})</span><span class="row-val">${fmt(sellerPayoff(f))}</span></div>` : '')
       + (f.sellerNet > 0 ? `<div class="row"><span class="row-label">Seller Bottom Dollar (net)</span><span class="row-val">${fmt(f.sellerNet)}</span></div>` : '');
   }
   function snapshotNetRowHTML(f, mao) {
