@@ -117,7 +117,6 @@
   @media (max-width: 640px) {
     .masthead-inner { grid-template-columns: auto 1fr; padding: 14px 20px; gap: 16px; }
     .report-actions { grid-column: 1 / -1; justify-content: flex-start; gap: 6px; }
-    .btn-print, .btn-edit { padding: 7px 10px; font-size: 11px; }
   }
   .btn-print, .btn-edit {
     display: inline-flex; align-items: center; gap: 8px;
@@ -134,6 +133,7 @@
   .btn-print:hover { border-color: var(--atlas-red); color: var(--atlas-red); }
   .btn-edit { background: var(--atlas-red); border-color: var(--atlas-red); color: white; }
   .btn-edit:hover { background: var(--atlas-red-dark); border-color: var(--atlas-red-dark); }
+  @media (max-width: 640px) { .btn-print, .btn-edit { padding: 7px 10px; font-size: 11px; } }
 
   /* ============ PAGE ============ */
   .page {
@@ -2025,9 +2025,30 @@
 
   // Creative exit inputs with an auto value: once the field is cleared (state back to 0) re-render on blur so the
   // auto number and its hint come back. Blur only — never on input, so typing is not disturbed.
+  // Auto (fallback) value + hint for the four creative exit inputs that revert to As-Is / market rent when cleared.
+  // Single source for the step template and for cfAutoBlur so the two can never disagree.
+  function cfExitAuto(key) {
+    const f = state.form;
+    if (key === 'cfWrapPrice') return f.cfWrapPrice > 0
+      ? { value: f.cfWrapPrice, hint: 'Custom · clear to revert to auto' }
+      : { value: f.asIsValue ? Math.round(f.asIsValue * 1.10) : '', hint: f.asIsValue ? `Auto 1.1× As-Is (${fmt(f.asIsValue * 1.10)}) · type to override` : 'Auto 1.1× As-Is · set As-Is value above' };
+    if (key === 'cfWrapBuyerPayment') return { value: f.cfWrapBuyerPayment > 0 ? f.cfWrapBuyerPayment : (f.monthlyRent || ''), hint: f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · edit for premium or discount` : "Buyer's all-in monthly payment" };
+    if (key === 'cfLoPrice') return f.cfLoPrice > 0
+      ? { value: f.cfLoPrice, hint: 'Custom · clear to revert to auto' }
+      : { value: f.asIsValue ? Math.round(f.asIsValue * (1 + ((f.cfLoAppreciation || 0) / 100) * (f.cfLoTermYears || 0))) : '', hint: 'Auto: As-Is + appreciation × term · editable' };
+    if (key === 'cfLoLeaseAmount') return { value: f.cfLoLeaseAmount > 0 ? f.cfLoLeaseAmount : (f.monthlyRent || ''), hint: f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · tenant covers taxes/ins on top` : 'Rent the tenant-buyer pays' };
+    return { value: '', hint: '' };
+  }
   function cfAutoBlur(el, key) {
     fmtOnBlur(el);
-    if (!(state.form[key] > 0)) renderStep();
+    if (state.form[key] > 0) return;
+    // Field was cleared: the math already reverted to the auto value, so show it in place — no renderStep(),
+    // which would destroy the control the user just tabbed into.
+    const a = cfExitAuto(key);
+    el.value = fmtInput(a.value);
+    const wrap = el.closest('.input-money');
+    const hint = wrap && wrap.parentElement ? wrap.parentElement.querySelector('.field-hint') : null;
+    if (hint) hint.textContent = a.hint;
   }
 
   function resetPurchasePrice() {
@@ -2536,8 +2557,8 @@
     const lineRows = Object.keys(rb).map(k => {
       const line = rb[k];
       const rateDisplay = line.unit === 'total'
-        ? `<div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="fmtOnBlur(this)"></div>`
-        : `<input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="fmtOnBlur(this)">`;
+        ? `<div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="this.value = fmtInput(Math.max(0, parseNum(this.value)))"></div>`
+        : `<input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="this.value = fmtInput(Math.max(0, parseNum(this.value)))">`;
       return `
         <div class="rehab-row ${line.on ? '' : 'inactive'}">
           <input type="checkbox" ${line.on ? 'checked' : ''} aria-label="${line.label}" onchange="updateRehab('${k}', 'on', this.checked)">
@@ -3173,8 +3194,8 @@
       const line = rb[k];
       // Compact rate input (always visible, inline with label) — for rehab rates per line
       const rateInput = line.unit === 'total'
-        ? `<div class="rate-input-wrap money"><input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="fmtOnBlur(this)"></div><span class="unit-label">total</span>`
-        : `<input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="fmtOnBlur(this)"><span class="unit-label">$/${line.unit}</span>`;
+        ? `<div class="rate-input-wrap money"><input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="this.value = fmtInput(Math.max(0, parseNum(this.value)))"></div><span class="unit-label">total</span>`
+        : `<input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="this.value = fmtInput(Math.max(0, parseNum(this.value)))"><span class="unit-label">$/${line.unit}</span>`;
       return `
         <label class="sidebar-rehab-row ${line.on ? '' : 'inactive'}">
           <input type="checkbox" ${line.on ? 'checked' : ''} aria-label="${line.label}" onchange="updateRehab('${k}', 'on', this.checked)">
@@ -3538,8 +3559,8 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Sale Price to Buyer (OFV)</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfWrapPrice > 0 ? f.cfWrapPrice : (f.asIsValue ? Math.round(f.asIsValue*1.10) : ''))}" oninput="update('cfWrapPrice', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfWrapPrice')"></div>
-          <div class="field-hint">${f.cfWrapPrice > 0 ? 'Custom · clear to revert to auto' : (f.asIsValue ? `Auto 1.1× As-Is (${fmt(f.asIsValue*1.10)}) · type to override` : 'Auto 1.1× As-Is · set As-Is value above')}</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(cfExitAuto('cfWrapPrice').value)}" oninput="update('cfWrapPrice', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfWrapPrice')"></div>
+          <div class="field-hint">${cfExitAuto('cfWrapPrice').hint}</div>
         </div>
         <div>
           <label class="field-label">Buyer Down Payment</label>
@@ -3548,8 +3569,8 @@
         </div>
         <div>
           <label class="field-label">Total Buyer Payment</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfWrapBuyerPayment > 0 ? f.cfWrapBuyerPayment : (f.monthlyRent || ''))}" oninput="update('cfWrapBuyerPayment', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfWrapBuyerPayment')"></div>
-          <div class="field-hint">${f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · edit for premium or discount` : "Buyer's all-in monthly payment"}</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(cfExitAuto('cfWrapBuyerPayment').value)}" oninput="update('cfWrapBuyerPayment', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfWrapBuyerPayment')"></div>
+          <div class="field-hint">${cfExitAuto('cfWrapBuyerPayment').hint}</div>
         </div>
         <div>
           <label class="field-label">Minimum Rate (floor)</label>
@@ -3566,8 +3587,8 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Option / Purchase Price</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfLoPrice > 0 ? f.cfLoPrice : (f.asIsValue ? Math.round(f.asIsValue*(1+((f.cfLoAppreciation||0)/100)*(f.cfLoTermYears||0))) : ''))}" oninput="update('cfLoPrice', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfLoPrice')"></div>
-          <div class="field-hint">${f.cfLoPrice > 0 ? 'Custom · clear to revert to auto' : 'Auto: As-Is + appreciation × term · editable'}</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(cfExitAuto('cfLoPrice').value)}" oninput="update('cfLoPrice', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfLoPrice')"></div>
+          <div class="field-hint">${cfExitAuto('cfLoPrice').hint}</div>
         </div>
         <div>
           <label class="field-label">Option Fee</label>
@@ -3576,8 +3597,8 @@
         </div>
         <div>
           <label class="field-label">Monthly Lease</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfLoLeaseAmount > 0 ? f.cfLoLeaseAmount : (f.monthlyRent || ''))}" oninput="update('cfLoLeaseAmount', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfLoLeaseAmount')"></div>
-          <div class="field-hint">${f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · tenant covers taxes/ins on top` : "Rent the tenant-buyer pays"}</div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(cfExitAuto('cfLoLeaseAmount').value)}" oninput="update('cfLoLeaseAmount', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfLoLeaseAmount')"></div>
+          <div class="field-hint">${cfExitAuto('cfLoLeaseAmount').hint}</div>
         </div>
         <div>
           <label class="field-label">Option Term (Years)</label>
@@ -5111,7 +5132,7 @@
   // Rehab is merged per mode / per line (rate + on only) so labels and units stay code-owned.
   function coerceLike(def, v, cur) {
     const isNum = typeof v === 'number' && isFinite(v);
-    if (def === null) return (v === null || isNum) ? v : cur;
+    if (def === null) return (v === null || (isNum && v >= 0)) ? v : cur;   // property values are never negative
     if (typeof def === 'number') return isNum ? v : cur;
     if (typeof def === 'boolean') return typeof v === 'boolean' ? v : cur;
     if (typeof def === 'string') return (typeof v === 'string' && v.length <= 500) ? v : cur;
@@ -5134,7 +5155,7 @@
             const line = lines[lineKey];
             if (!line || typeof line !== 'object') continue;
             const dst = state.form.rehab[mode][lineKey];
-            if (has(line, 'rate') && typeof line.rate === 'number' && isFinite(line.rate)) dst.rate = line.rate;
+            if (has(line, 'rate') && typeof line.rate === 'number' && isFinite(line.rate)) dst.rate = Math.max(0, line.rate);
             if (has(line, 'on') && typeof line.on === 'boolean') dst.on = line.on;
           }
         }
