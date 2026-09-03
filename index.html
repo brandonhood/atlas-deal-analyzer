@@ -1524,6 +1524,10 @@
     .offer-callout .mao-val, .offer-callout .offer-range-val { color: var(--ink) !important; }
     .offer-callout .mao-val { color: var(--atlas-red) !important; }
     .offer-callout .mao-sub, .offer-callout .offer-range-label { color: var(--ink-3) !important; }
+    .offer-callout .eyebrow { color: var(--atlas-red) !important; }
+    .offer-callout .net-seller-sub { color: var(--ink-2) !important; border-top-color: var(--rule) !important; }
+    .offer-callout .net-seller-sub strong { color: var(--ink) !important; }
+    .offer-callout .offer-range-net { color: var(--ink-3) !important; }
     .grade-badge, .key-metric-val, .stat-val, .subsection-title, .cf-cmp-col, .equity-callout, .warn-chip { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
     .ghl-banner, #toast, .toast, .mobile-bar { display: none !important; }
     @page { margin: 12mm; }
@@ -1667,6 +1671,16 @@
           <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input js-rent-input" id="f-monthlyRent" placeholder="1,500"></div>
         </div>
       </div>
+      <div class="field-grid-4" style="margin-bottom: 0; margin-top: 4px;">
+        <div>
+          <label class="field-label">Bottom Dollar (Seller Net)</label>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-sellerNet" placeholder="60,000"></div>
+        </div>
+        <div>
+          <label class="field-label">Arrears / Liens</label>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-cfArrearsLiens" placeholder="0"></div>
+        </div>
+      </div>
     </div>
 
     <!-- MODE SELECTOR -->
@@ -1777,6 +1791,7 @@
       arv: null,
       asIsValue: null,
       mortgageBalance: null,
+      sellerNet: null,        // Seller Bottom Dollar — required net after payoff (NOT a purchase price)
       appreciation: 3,
 
       // Purchase (rental)
@@ -1941,7 +1956,12 @@
   // Formatted money/number inputs: parse "250,000" -> 250000; render 250000 -> "250,000"
   const parseNum = v => { if (v == null) return 0; const s = String(v).replace(/[^0-9.\-]/g, ""); const n = parseFloat(s); return isNaN(n) ? 0 : n; };
   const fmtInput = n => (n == null || n === "" || isNaN(n)) ? "" : Number(n).toLocaleString("en-US", { maximumFractionDigits: 2 });
-  function fmtOnBlur(el) { el.value = el.value.trim() === "" ? "" : fmtInput(parseNum(el.value)); }
+  function fmtOnBlur(el) {
+    if (el.value.trim() === "") { el.value = ""; return; }
+    let n = parseNum(el.value);
+    if (n < 0 && el.closest && el.closest(".input-money")) n = 0;   // money inputs are never negative; mirror the state clamp
+    el.value = fmtInput(n === 0 ? 0 : n);                              // n === 0 also catches -0 → "0" not "-0"
+  }
 
   // One rent number, mirrored across every visible rent input (property bar + creative + rental + brrrr)
   function syncRentInputs(n, src) {
@@ -1951,12 +1971,13 @@
 
   // Hook up always-visible property-bar inputs (they persist across modes)
   function bindPropertyBar() {
-    const moneyKeys = ['sqft','arv','asIsValue','mortgageBalance','monthlyRent'];  // formatted text inputs (thousands separators)
-    ['address','sellerName','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance','monthlyRent'].forEach(key => {
+    const moneyKeys = ['sqft','arv','asIsValue','mortgageBalance','monthlyRent','sellerNet','cfArrearsLiens'];  // formatted text inputs (thousands separators)
+    const zeroWhenBlank = ['monthlyRent','cfArrearsLiens'];   // 0-default fields: blank input → 0 (the others → null)
+    ['address','sellerName','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance','monthlyRent','sellerNet','cfArrearsLiens'].forEach(key => {
       const el = document.getElementById('f-' + key);
       if (!el) return;
       const isMoney = moneyKeys.includes(key);
-      el.value = (state.form[key] == null || (key === 'monthlyRent' && !state.form[key])) ? '' : (isMoney ? fmtInput(state.form[key]) : state.form[key]);
+      el.value = (state.form[key] == null || (zeroWhenBlank.includes(key) && !state.form[key])) ? '' : (isMoney ? fmtInput(state.form[key]) : state.form[key]);
       if (isMoney) el.addEventListener('blur', () => fmtOnBlur(el));
       el.addEventListener('input', () => {
           const raw = el.value;
@@ -1964,10 +1985,10 @@
           if (key === 'address' || key === 'sellerName') {
             state.form[key] = raw;
           } else if (raw === '' || raw == null) {
-            state.form[key] = (key === 'monthlyRent') ? 0 : null;
+            state.form[key] = zeroWhenBlank.includes(key) ? 0 : null;
           } else {
             state.form[key] = isMoney ? parseNum(raw) : (parseFloat(raw) || 0);
-            if (key === 'sqft' && state.form[key] < 0) state.form[key] = 0;
+            if ((key === 'sqft' || key === 'sellerNet' || key === 'cfArrearsLiens') && state.form[key] < 0) state.form[key] = 0;
           }
           if (key === 'asIsValue' && (state.mode === 'rental' || state.mode === 'brrrr')) {
             syncPurchasePriceFromAsIs();
@@ -1977,7 +1998,7 @@
           if (key === 'sqft') renderStep();
           if (key === 'address') renderStep();
           if (key === 'monthlyRent') syncRentInputs(state.form.monthlyRent, el);
-          if (state.mode === 'creative' && (key === 'monthlyRent' || key === 'asIsValue')) renderStep();
+          if (state.mode === 'creative' && (key === 'monthlyRent' || key === 'asIsValue' || key === 'cfArrearsLiens')) renderStep();
           if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
           if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
         });
@@ -2024,6 +2045,10 @@
     if (key === 'includeAtlasFee') renderStep();
     if (key === 'brrrrAcqType') renderStep();
     if (key === 'monthlyRent') syncRentInputs(val, document.activeElement);
+    if (key === 'cfArrearsLiens') {   // same number lives in the property bar — mirror it unless the user is typing there
+      const bar = document.getElementById('f-cfArrearsLiens');
+      if (bar && bar !== document.activeElement) bar.value = val ? fmtInput(val) : '';
+    }
     if (state.mode === 'creative') renderCreativeSummary();
     if (key === 'cfAcqType' || key === 'cfActiveExit' || key === 'cfPlOn' || key === 'cfPlInterestOnly' || key === 'cfSfInterestOnly') renderStep();
   }
@@ -2148,6 +2173,9 @@
     }
     if (mode === 'creative' && (!state.form.cfSubAmount || state.form.cfSubAmount === 0) && state.form.mortgageBalance) {
       state.form.cfSubAmount = state.form.mortgageBalance;  // SubTo balance defaults from GHL mortgage_balance
+    }
+    if (mode === 'creative' && !(state.form.cfCashToSeller > 0) && state.form.sellerNet > 0) {
+      state.form.cfCashToSeller = state.form.sellerNet;     // Cash to Seller defaults from the seller's bottom dollar (net after payoff)
     }
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
@@ -2371,7 +2399,7 @@
       get(target, prop) {
         const v = target[prop];
         // Only coerce these specific GHL-driven numeric fields. Everything else passes through.
-        if (['beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance'].includes(prop)) {
+        if (['beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance','sellerNet'].includes(prop)) {
           return v == null ? 0 : v;
         }
         return v;
@@ -3075,6 +3103,13 @@
     if (!(state.form.arv > 0)) return warnChip('Enter ARV to size the refi.');
     return b.cashOutAtRefi < 0 ? warnChip('Refi loan does not cover the acquisition loan payoff and closing — short by ' + fmt(-b.cashOutAtRefi) + '.', true) : '';
   }
+  // What the seller must pay off at the table: mortgage balance + arrears / liens. "Net to seller" is always price − this.
+  function sellerPayoff(f) { return (f.mortgageBalance || 0) + (f.cfArrearsLiens || 0); }
+  function payoffLabel(f) {   // name only the parts that are actually owed
+    const hasMortgage = (f.mortgageBalance || 0) > 0, hasLiens = (f.cfArrearsLiens || 0) > 0;
+    return hasMortgage && hasLiens ? 'mortgage + liens payoff' : hasLiens ? 'liens payoff' : 'mortgage payoff';
+  }
+
   // Returns [{ key, text, danger }] for the current mode. Keys let a view skip a flag it already shows another way.
   function underwritingFlags(c) {
     const f = state.form, mode = state.mode, flags = [];
@@ -3084,10 +3119,22 @@
     if (mode === 'wholesale' || mode === 'novation') {
       const mao = mode === 'wholesale' ? c.wholesaleMAO : c.novationMAO;
       const hasValue = mode === 'wholesale' ? f.arv > 0 : f.asIsValue > 0;
-      const mortgage = f.mortgageBalance || 0;
+      const payoff = sellerPayoff(f);
       if (!hasValue) flags.push({ key: 'missing-value', text: mode === 'wholesale' ? 'ARV is missing — enter it to price this deal.' : 'As-Is value is missing — enter it to price this deal.', danger: false });
       if (hasValue && !(f.sqft > 0) && sqftLineOn) flags.push({ key: 'sqft', text: 'Square feet is blank — $/sf rehab lines are counting as $0, so this MAO is overstated.', danger: false });
-      if (mortgage > 0 && mao > 0 && mao < mortgage) flags.push({ key: 'mortgage', text: 'MAO is ' + fmt(mortgage - mao) + ' below the mortgage payoff — the seller cannot close at this price without a short sale or bringing cash.', danger: true });
+      if (payoff > 0 && mao > 0 && mao < payoff) flags.push({ key: 'mortgage', text: 'MAO is ' + fmt(payoff - mao) + ' below the ' + payoffLabel(f) + ' — the seller cannot close at this price without a short sale or bringing cash.', danger: true });
+      // Seller Bottom Dollar = required NET after payoff, so it is compared to net-at-MAO, never to MAO itself
+      if (hasValue && mao > 0 && f.sellerNet > 0) {
+        const netAtMao = Math.max(0, mao - payoff);
+        const netAtCeiling = Math.max(0, (mao + 5000) - payoff);
+        if (netAtMao < f.sellerNet) {
+          let text = 'MAO nets the seller ' + fmt(netAtMao) + ' — ' + fmt(f.sellerNet - netAtMao) + ' short of their ' + fmt(f.sellerNet) + ' bottom dollar';
+          text += netAtCeiling >= f.sellerNet ? ' — the ceiling would cover it.' : ', the ceiling (' + fmt(mao + 5000) + ') nets ' + fmt(netAtCeiling) + '.';
+          flags.push({ key: 'bottom-dollar', text, danger: true });
+        } else {
+          flags.push({ key: 'bottom-dollar', text: 'MAO nets the seller ' + fmt(netAtMao) + ', covering their ' + fmt(f.sellerNet) + ' bottom dollar with ' + fmt(netAtMao - f.sellerNet) + ' to spare.', danger: false });
+        }
+      }
     } else if (mode === 'rental' || mode === 'brrrr') {
       const hasRent = f.monthlyRent > 0;
       if (mode === 'brrrr' && !(f.arv > 0)) flags.push({ key: 'missing-value', text: 'Enter ARV to size the refi.', danger: false });
@@ -3111,7 +3158,7 @@
   function offerCalloutHTML(mode, c) {
     const f = state.form;
     const mao = mode === 'wholesale' ? c.wholesaleMAO : c.novationMAO;
-    const mortgage = f.mortgageBalance || 0;
+    const payoff = sellerPayoff(f);   // mortgage balance + arrears / liens
     // The driving value (ARV for wholesale, As-Is for novation) — no value, no price
     const hasValue = mode === 'wholesale' ? f.arv > 0 : f.asIsValue > 0;
     const eyebrow = `<div class="eyebrow">${mode === 'wholesale' ? 'Wholesale' : 'Novation'} Max Allowable Offer</div>`;
@@ -3129,13 +3176,13 @@
       </div>
     `;
     }
-    const netAtMao = Math.max(0, mao - mortgage);
-    const netAtFloor = Math.max(0, (mao - 5000) - mortgage);
-    const netAtCeiling = Math.max(0, (mao + 5000) - mortgage);
-    // Only show the net-to-seller block if the seller actually has a mortgage
-    const hasMortgage = mortgage > 0;
+    const netAtMao = Math.max(0, mao - payoff);
+    const netAtFloor = Math.max(0, (mao - 5000) - payoff);
+    const netAtCeiling = Math.max(0, (mao + 5000) - payoff);
+    // Only show the net-to-seller block if the seller actually has something to pay off
+    const hasMortgage = payoff > 0;
     const netSubLabel = hasMortgage
-      ? `Seller nets <strong>${fmt(netAtMao)}</strong> at table after ${fmt(mortgage)} mortgage payoff`
+      ? `Seller nets <strong>${fmt(netAtMao)}</strong> at table after ${fmt(payoff)} ${payoffLabel(f)}`
       : 'No mortgage on file · MAO equals net to seller';
     return `
       <div id="offer-block">
@@ -3508,7 +3555,7 @@
         </div>
         <div>
           <label class="field-label">Arrears / Liens</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfArrearsLiens)}" oninput="update('cfArrearsLiens', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfArrearsLiens)}" oninput="update('cfArrearsLiens', Math.max(0, parseNum(this.value)))" onblur="fmtOnBlur(this)"></div>
           <div class="field-hint">Back payments, code liens, etc.</div>
         </div>
         <div>
@@ -3863,6 +3910,7 @@
             <div class="preview-stat"><span class="preview-stat-label">${exitName} Cash-on-Cash</span><span class="preview-stat-val ${coc >= 0 ? 'good':'bad'}">${fmtPct(coc)}</span></div>
           </div>
         </div>
+        ${f.sellerNet > 0 && (f.cfCashToSeller || 0) < f.sellerNet ? warnChip('Cash to seller ' + fmt(f.cfCashToSeller || 0) + ' is below their ' + fmt(f.sellerNet) + ' bottom dollar') : ''}
       </div>
     `;
   }
@@ -4288,6 +4336,17 @@
     });
   }
 
+  // Report Property Snapshot helpers (wholesale + novation): payoff / bottom-dollar rows, net-to-seller graded against the bottom dollar
+  function snapshotPayoffRowsHTML(f) {
+    return ((f.cfArrearsLiens || 0) > 0 ? `<div class="row"><span class="row-label">Payoff (${payoffLabel(f).replace(' payoff', '')})</span><span class="row-val">${fmt(sellerPayoff(f))}</span></div>` : '')
+      + (f.sellerNet > 0 ? `<div class="row"><span class="row-label">Seller Bottom Dollar (net)</span><span class="row-val">${fmt(f.sellerNet)}</span></div>` : '');
+  }
+  function snapshotNetRowHTML(f, mao) {
+    const net = mao - sellerPayoff(f);
+    const cls = f.sellerNet > 0 ? (net >= f.sellerNet ? ' good' : ' bad') : '';
+    return `<div class="row row-bold"><span class="row-label">Net to Seller (@ MAO)</span><span class="row-val${cls}">${fmt(net)}</span></div>`;
+  }
+
   function wholesaleReportSectionsHTML(c) {
     const f = state.form;
     const repairPerSf = f.sqft > 0 ? (c.repairCost / f.sqft).toFixed(2) : '0';
@@ -4317,9 +4376,10 @@
           <div class="row"><span class="row-label">ARV</span><span class="row-val">${fmt(f.arv)}</span></div>
           <div class="row"><span class="row-label">Spread (ARV − As-Is)</span><span class="row-val">${fmt(f.arv - f.asIsValue)}</span></div>
           <div class="row"><span class="row-label">Mortgage Balance</span><span class="row-val">${fmt(f.mortgageBalance)}</span></div>
+          ${snapshotPayoffRowsHTML(f)}
           <div class="row-divider">
             <div class="row row-bold"><span class="row-label">Seller Equity (@ As-Is)</span><span class="row-val">${fmt(f.asIsValue - f.mortgageBalance)}</span></div>
-            <div class="row row-bold"><span class="row-label">Net to Seller (@ MAO)</span><span class="row-val">${fmt(c.wholesaleMAO - f.mortgageBalance)}</span></div>
+            ${snapshotNetRowHTML(f, c.wholesaleMAO)}
           </div>
         </div>
       </div>
@@ -4362,8 +4422,9 @@
           <div class="row"><span class="row-label">As-Is Value</span><span class="row-val">${fmt(f.asIsValue)}</span></div>
           <div class="row"><span class="row-label">ARV</span><span class="row-val">${fmt(f.arv)}</span></div>
           <div class="row"><span class="row-label">Mortgage Balance</span><span class="row-val">${fmt(f.mortgageBalance)}</span></div>
+          ${snapshotPayoffRowsHTML(f)}
           <div class="row-divider">
-            <div class="row row-bold"><span class="row-label">Net to Seller (@ MAO)</span><span class="row-val">${fmt(c.novationMAO - f.mortgageBalance)}</span></div>
+            ${snapshotNetRowHTML(f, c.novationMAO)}
             <div class="row row-bold"><span class="row-label">vs. Wholesale MAO</span><span class="row-val">${c.novationMAO - c.wholesaleMAO >= 0 ? '+' : ''}${fmt(c.novationMAO - c.wholesaleMAO)}</span></div>
           </div>
         </div>
@@ -4726,7 +4787,12 @@
   }
 
   // ============ URL PARAMETER INGESTION (GHL deep-link integration) ============
-  // Reads ?address=...&arv=...&as_is=...&mortgage=...&sqft=...&year=...&purchase=...&monthly_rent=...&contact_id=...&contact_name=...
+  // Accepted keys (see README "GHL deep-link parameters"):
+  //   address, beds, baths, sqft, year, arv, as_is, mortgage (→ mortgageBalance + cfSubAmount), purchase,
+  //   monthly_rent / market_rent (→ monthlyRent), bottom_dollar (→ sellerNet; legacy alias: asking),
+  //   arrears (→ cfArrearsLiens), rate (→ cfSubRate), monthly_pi (→ cfSubPI),
+  //   taxes (monthly → cfTaxesMonthly + propertyTaxAnnual ×12), insurance (monthly → cfInsuranceMonthly + insuranceAnnual ×12),
+  //   hoa (monthly → cfHoaMonthly + hoaMonthly), contact_id, contact_name (→ sellerName).
   // Unknown params ignored. Missing params fall back to defaults. Mode always opens to Wholesale per spec.
   const ghlContext = { contactId: null, contactName: null, prefilled: false };
   // opts.propertyFromHash: the #d= hash was saved on top of these same GHL params, so the property fields
@@ -4752,14 +4818,18 @@
       as_is:         v => state.form.asIsValue = num(v),
       mortgage:      v => { const n = num(v); state.form.mortgageBalance = n; if (n != null) state.form.cfSubAmount = n; },
       purchase:      v => { const n = parseFloat(v); if (n) { state.form.purchasePrice = n; state.form.purchasePriceTouched = true; } },   // touched, so Rental/BRRRR keep it instead of re-deriving from As-Is
-      monthly_rent:  v => state.form.monthlyRent = parseFloat(v) || state.form.monthlyRent,
+      monthly_rent:  v => { const n = num(v); if (n != null) state.form.monthlyRent = n; },
+      // Seller Bottom Dollar = required NET proceeds after the mortgage + liens are paid off (not a purchase price)
+      bottom_dollar: v => { const n = num(v); if (n != null && n >= 0) state.form.sellerNet = n; },
+      asking:        v => { const n = num(v); if (n != null && n >= 0 && state.form.sellerNet == null) state.form.sellerNet = n; },   // legacy alias for bottom_dollar
       // ----- Creative Finance: auto-fill from GHL mortgage section -----
       rate:          v => { const n = num(v); if (n != null) state.form.cfSubRate = n; },
       monthly_pi:    v => { const n = num(v); if (n != null) state.form.cfSubPI = n; },
-      arrears:       v => { const n = num(v); if (n != null) state.form.cfArrearsLiens = n; },
-      taxes:         v => { const n = num(v); if (n != null) state.form.cfTaxesMonthly = n; },
-      insurance:     v => { const n = num(v); if (n != null) state.form.cfInsuranceMonthly = n; },
-      hoa:           v => { const n = num(v); if (n != null) state.form.cfHoaMonthly = n; },
+      arrears:       v => { const n = num(v); if (n != null && n >= 0) state.form.cfArrearsLiens = n; },
+      // Monthly carry from GHL fans out to the rental/BRRRR expense fields too (annual = monthly × 12)
+      taxes:         v => { const n = num(v); if (n != null) { state.form.cfTaxesMonthly = n; state.form.propertyTaxAnnual = n * 12; } },
+      insurance:     v => { const n = num(v); if (n != null) { state.form.cfInsuranceMonthly = n; state.form.insuranceAnnual = n * 12; } },
+      hoa:           v => { const n = num(v); if (n != null) { state.form.cfHoaMonthly = n; state.form.hoaMonthly = n; } },
       market_rent:   v => { const n = num(v); if (n != null) state.form.monthlyRent = n; },
       contact_id:    v => ghlContext.contactId = v,
       contact_name:  v => {
@@ -4804,6 +4874,7 @@
   const ANALYZER_WEBHOOK_URL = 'https://hook.us2.make.com/u15vyv5j9ubkk42kgkmk55cx8s303jo7';
 
   async function saveDealToGhl(buttonEl) {
+    flushSave();   // make the #d= hash current so share_url restores exactly what was sent
     const c = calculate();
     const f = state.form;
     const mode = state.mode;
@@ -4823,7 +4894,7 @@
         rehab: c.wsRepair,
         rehabber_profit: c.rehabberProfit,
         wholesale_fee: f.wholesaleFee,
-        net_to_seller: Math.max(0, c.wholesaleMAO - f.mortgageBalance),
+        net_to_seller: Math.max(0, c.wholesaleMAO - sellerPayoff(f)),
         mao_to_arv_pct: c.wholesaleMaoArv,
       };
     } else if (mode === 'novation') {
@@ -4832,7 +4903,7 @@
       secondary = {
         rehab: c.novRepair,
         atlas_profit: f.novationProfit,
-        net_to_seller: Math.max(0, c.novationMAO - f.mortgageBalance),
+        net_to_seller: Math.max(0, c.novationMAO - sellerPayoff(f)),
         mao_to_arv_pct: c.novationMaoArv,
       };
     } else if (mode === 'brrrr') {
@@ -4893,6 +4964,7 @@
       source: 'deal-analyzer',
       timestamp: new Date().toISOString(),
       dedup_key: dedupKey,
+      share_url: location.href,   // carries the #d= state hash — opens this exact deal
       ghl: {
         contact_id: ghlContext.contactId,
         contact_name: ghlContext.contactName,
@@ -4902,6 +4974,9 @@
         address: f.address,
         beds: f.beds, baths: f.baths, sqft: f.sqft, year_built: f.yearBuilt,
         arv: f.arv, as_is: f.asIsValue, mortgage_balance: f.mortgageBalance,
+        seller_bottom_dollar: f.sellerNet,          // required NET to seller after payoff (null when unknown)
+        arrears_liens: f.cfArrearsLiens,
+        payoff: sellerPayoff(f),                    // mortgage balance + arrears / liens
         seller_name: f.sellerName || null,
       },
       exit: mode,
@@ -5171,7 +5246,11 @@
     if (src && typeof src === 'object') {
       for (const key of Object.keys(state.form)) {
         if (!has(src, key)) continue;
-        if (key !== 'rehab') { state.form[key] = coerceLike(FORM_DEFAULTS[key], src[key], state.form[key]); continue; }
+        if (key !== 'rehab') {
+          const v = coerceLike(FORM_DEFAULTS[key], src[key], state.form[key]);
+          if (!(key === 'cfArrearsLiens' && v < 0)) state.form[key] = v;   // arrears default to 0, so coerceLike's negative guard (null-default fields) does not cover them
+          continue;
+        }
         const rehab = src.rehab;
         if (!rehab || typeof rehab !== 'object') continue;
         for (const mode of Object.keys(state.form.rehab)) {
