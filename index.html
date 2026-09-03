@@ -1976,8 +1976,12 @@
 
   function update(key, val) {
     state.form[key] = val;
-    if (key === 'purchasePrice') state.form.purchasePriceTouched = true;
+    if (key === 'purchasePrice') { state.form.purchasePriceTouched = true; refreshPurchasePriceHint(); }
     renderSidebar();
+    if (state.mode === 'brrrr' && state.step === 4 && key.startsWith('brrrrRefi')) {
+      const el = document.getElementById('refi-summary');
+      if (el) el.outerHTML = brrrrRefiSummaryHTML();
+    }
     // Step-level live updates
     if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
     if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
@@ -2001,9 +2005,27 @@
     if (ppEl && ppEl !== document.activeElement) ppEl.value = fmtInput(f.purchasePrice);
   }
 
+  // Purchase Price hint (rental + BRRRR step 1) — patched in place by update() so the link appears while typing
+  function purchasePriceHintHTML() {
+    const base = state.mode === 'brrrr' ? 'As-Is default · push lower for stronger recycle' : 'As-Is default · edit for negotiated price';
+    return base + (state.form.purchasePriceTouched ? '<a href="#" onclick="resetPurchasePrice(); return false;" style="font-size:11px;color:var(--atlas-red);margin-left:6px;">Reset to As-Is</a>' : '');
+  }
+  function refreshPurchasePriceHint() {
+    const el = document.getElementById('pp-hint');
+    if (el) el.innerHTML = purchasePriceHintHTML();
+  }
+
+  // Creative exit inputs with an auto value: once the field is cleared (state back to 0) re-render on blur so the
+  // auto number and its hint come back. Blur only — never on input, so typing is not disturbed.
+  function cfAutoBlur(el, key) {
+    fmtOnBlur(el);
+    if (!(state.form[key] > 0)) renderStep();
+  }
+
   function resetPurchasePrice() {
     state.form.purchasePriceTouched = false;
     syncPurchasePriceFromAsIs();
+    refreshPurchasePriceHint();
     renderStep();
     renderSidebar();
     if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
@@ -2621,7 +2643,7 @@
             <div>
               <label class="field-label">Purchase Price</label>
               <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-purchasePrice" placeholder="As-Is value" value="${fmtInput(f.purchasePrice || '')}" oninput="update('purchasePrice', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
-              <div class="field-hint">As-Is default · edit for negotiated price${f.purchasePriceTouched ? '<a href="#" onclick="resetPurchasePrice(); return false;" style="font-size:11px;color:var(--atlas-red);margin-left:6px;">Reset to As-Is</a>' : ''}</div>
+              <div class="field-hint" id="pp-hint">${purchasePriceHintHTML()}</div>
             </div>
             <div>
               <label class="field-label">Closing Costs</label>
@@ -2700,7 +2722,7 @@
             <div>
               <label class="field-label">Purchase Price</label>
               <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-purchasePrice" placeholder="As-Is value" value="${fmtInput(f.purchasePrice || '')}" oninput="update('purchasePrice', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
-              <div class="field-hint">As-Is default · push lower for stronger recycle${f.purchasePriceTouched ? '<a href="#" onclick="resetPurchasePrice(); return false;" style="font-size:11px;color:var(--atlas-red);margin-left:6px;">Reset to As-Is</a>' : ''}</div>
+              <div class="field-hint" id="pp-hint">${purchasePriceHintHTML()}</div>
             </div>
             <div>
               <label class="field-label">Closing Costs (Purchase)</label>
@@ -2727,7 +2749,7 @@
           <div class="equity-callout${(f.arv - f.purchasePrice - calcRehab('brrrr')) > 0 ? ' good' : ''}" id="rental-equity-callout">
             <div class="eyebrow">Forced Appreciation Spread</div>
             <div class="val">${fmt(f.arv - f.purchasePrice - calcRehab('brrrr'))}</div>
-            <div class="sub">ARV − Purchase − Rehab · this is what drives cash out at refi</div>
+            <div class="sub">ARV − Purchase − Rehab · drives cash out at refi</div>
           </div>
         `;
       }
@@ -2962,14 +2984,16 @@
     const cashBackSign = b.cashLeftInDeal <= 0 ? 'good' : 'bad';
     const cashBackLabel = b.cashLeftInDeal <= 0 ? 'Fully recycled · infinite return' : 'Cash left in deal';
     return `
+      <div id="refi-summary">
       <div class="rehab-card" style="margin-top: 24px;">
         <div class="rehab-head">
           <span class="rehab-title">Refi Math</span>
           <span class="rehab-total">${fmt(b.cashOutAtRefi)} <span style="font-family:var(--accent);font-size:11px;font-weight:600;color:var(--ink-3);letter-spacing:0.1em;text-transform:uppercase;margin-left:6px;">cash out</span></span>
         </div>
         <div class="row"><span class="row-label">Refi Loan Amount (ARV × ${state.form.brrrrRefiLtv}%)</span><span class="row-val">${fmt(b.refiLoan)}</span></div>
-        <div class="row"><span class="row-label">− Acquisition Loan Payoff</span><span class="row-val">−${fmt(b.acqLoan)}</span></div>
-        <div class="row"><span class="row-label">− Refi Closing Costs (${state.form.brrrrRefiClosingPct}%)</span><span class="row-val">−${fmt(b.refiClosing)}</span></div>
+        <div class="row"><span class="row-label">− Acquisition Loan Payoff</span><span class="row-val">${fmt(-(b.acqLoan))}</span></div>
+        <div class="row"><span class="row-label">− Refi Closing Costs (${state.form.brrrrRefiClosingPct}%)</span><span class="row-val">${fmt(-(b.refiClosing))}</span></div>
+        <div class="row"><span class="row-label">Refi Monthly P&I (${state.form.brrrrRefiRate}% · ${state.form.brrrrRefiTerm}yr)</span><span class="row-val">${fmt(b.refiMonthlyPI)}</span></div>
         <div class="row-divider">
           <div class="row row-bold"><span class="row-label">Cash Out at Refi</span><span class="row-val">${fmt(b.cashOutAtRefi)}</span></div>
           <div class="row row-bold"><span class="row-label">Acq Cash + Seasoning Debt</span><span class="row-val">${fmt(b.acqCashIn + b.seasoningDebtService)}</span></div>
@@ -2978,7 +3002,8 @@
             <span class="row-val">${fmt(Math.max(0, b.cashLeftInDeal))}</span>
           </div>
         </div>
-        ${b.cashOutAtRefi < 0 ? warnChip('Refi loan does not cover the acquisition loan payoff and closing — short by ' + fmt(-b.cashOutAtRefi) + '.', true) : ''}
+        ${refiShortfallChip(c)}
+      </div>
       </div>
     `;
   }
@@ -3499,7 +3524,7 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Sale Price to Buyer (OFV)</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfWrapPrice > 0 ? f.cfWrapPrice : (f.asIsValue ? Math.round(f.asIsValue*1.10) : ''))}" oninput="update('cfWrapPrice', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfWrapPrice > 0 ? f.cfWrapPrice : (f.asIsValue ? Math.round(f.asIsValue*1.10) : ''))}" oninput="update('cfWrapPrice', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfWrapPrice')"></div>
           <div class="field-hint">${f.cfWrapPrice > 0 ? 'Custom · clear to revert to auto' : (f.asIsValue ? `Auto 1.1× As-Is (${fmt(f.asIsValue*1.10)}) · type to override` : 'Auto 1.1× As-Is · set As-Is value above')}</div>
         </div>
         <div>
@@ -3509,7 +3534,7 @@
         </div>
         <div>
           <label class="field-label">Total Buyer Payment</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfWrapBuyerPayment > 0 ? f.cfWrapBuyerPayment : (f.monthlyRent || ''))}" oninput="update('cfWrapBuyerPayment', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfWrapBuyerPayment > 0 ? f.cfWrapBuyerPayment : (f.monthlyRent || ''))}" oninput="update('cfWrapBuyerPayment', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfWrapBuyerPayment')"></div>
           <div class="field-hint">${f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · edit for premium or discount` : "Buyer's all-in monthly payment"}</div>
         </div>
         <div>
@@ -3527,7 +3552,7 @@
       <div class="field-grid-2">
         <div>
           <label class="field-label">Option / Purchase Price</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfLoPrice > 0 ? f.cfLoPrice : (f.asIsValue ? Math.round(f.asIsValue*(1+((f.cfLoAppreciation||0)/100)*(f.cfLoTermYears||0))) : ''))}" oninput="update('cfLoPrice', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfLoPrice > 0 ? f.cfLoPrice : (f.asIsValue ? Math.round(f.asIsValue*(1+((f.cfLoAppreciation||0)/100)*(f.cfLoTermYears||0))) : ''))}" oninput="update('cfLoPrice', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfLoPrice')"></div>
           <div class="field-hint">${f.cfLoPrice > 0 ? 'Custom · clear to revert to auto' : 'Auto: As-Is + appreciation × term · editable'}</div>
         </div>
         <div>
@@ -3537,7 +3562,7 @@
         </div>
         <div>
           <label class="field-label">Monthly Lease</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfLoLeaseAmount > 0 ? f.cfLoLeaseAmount : (f.monthlyRent || ''))}" oninput="update('cfLoLeaseAmount', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(f.cfLoLeaseAmount > 0 ? f.cfLoLeaseAmount : (f.monthlyRent || ''))}" oninput="update('cfLoLeaseAmount', parseNum(this.value))" onblur="cfAutoBlur(this, 'cfLoLeaseAmount')"></div>
           <div class="field-hint">${f.monthlyRent > 0 ? `Pegged to market rent (${fmt(f.monthlyRent)}/mo) · tenant covers taxes/ins on top` : "Rent the tenant-buyer pays"}</div>
         </div>
         <div>
