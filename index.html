@@ -113,7 +113,12 @@
   }
   @media (max-width: 640px) { .masthead-meta { display: none; } }
 
-  .report-actions { display: flex; gap: 8px; }
+  .report-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+  @media (max-width: 640px) {
+    .masthead-inner { grid-template-columns: auto 1fr; padding: 14px 20px; gap: 16px; }
+    .report-actions { grid-column: 1 / -1; justify-content: flex-start; gap: 6px; }
+    .btn-print, .btn-edit { padding: 7px 10px; font-size: 11px; }
+  }
   .btn-print, .btn-edit {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 8px 14px;
@@ -1402,6 +1407,11 @@
     cursor: pointer;
   }
   .ghl-banner button:hover { border-color: var(--atlas-red); color: var(--atlas-red); }
+  @media (max-width: 640px) {
+    .ghl-banner { flex-wrap: wrap; }
+    .ghl-banner-text { flex: 1 1 100%; }
+    .ghl-banner button { min-height: 36px; padding: 6px 12px; }
+  }
 
   .btn-save-ghl {
     background: var(--atlas-charcoal);
@@ -1485,7 +1495,7 @@
     .offer-callout .mao-val, .offer-callout .offer-range-val { color: var(--ink) !important; }
     .offer-callout .mao-val { color: var(--atlas-red) !important; }
     .offer-callout .mao-sub, .offer-callout .offer-range-label { color: var(--ink-3) !important; }
-    .grade-badge, .key-metric-val, .stat-val, .subsection-title, .cf-cmp-col, .equity-callout { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    .grade-badge, .key-metric-val, .stat-val, .subsection-title, .cf-cmp-col, .equity-callout, .warn-chip { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
     .ghl-banner, #toast, .toast, .mobile-bar { display: none !important; }
     @page { margin: 12mm; }
   }
@@ -1528,8 +1538,9 @@
     .mobile-bar-label { font-family: var(--accent); font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: #B8BCC4; }
     .mobile-bar-val { font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mobile-bar-badge { font-family: var(--display); font-weight: 800; font-size: 14px; padding: 4px 10px; border-radius: 6px; background: var(--atlas-gold); color: white; }
-    .mobile-bar-btn { background: var(--atlas-red); color: white; border: none; border-radius: 8px; padding: 10px 12px; font-family: var(--display); font-weight: 700; font-size: 12px; cursor: pointer; }
+    .mobile-bar-btn { background: var(--atlas-red); color: white; border: none; border-radius: 8px; padding: 10px 12px; min-height: 44px; font-family: var(--display); font-weight: 700; font-size: 12px; cursor: pointer; }
     .page { padding-bottom: 96px; }
+    .toast { bottom: calc(84px + env(safe-area-inset-bottom)); left: 16px; right: 16px; max-width: none; }
   }
 </style>
 </head>
