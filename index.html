@@ -1947,6 +1947,7 @@
             syncPurchasePriceFromAsIs();
           }
           renderSidebar();
+          refreshRefiSummary();  // Refi Math card depends on ARV / As-Is / rent
           if (key === 'sqft') renderStep();
           if (key === 'address') renderStep();
           if (key === 'monthlyRent') syncRentInputs(state.form.monthlyRent, el);
@@ -1977,14 +1978,18 @@
   });
   labelInputs(document);
 
+  // Re-render the BRRRR Refinance step's "Refi Math" card in place (it reads ARV, As-Is, rent and the refi inputs)
+  function refreshRefiSummary() {
+    if (state.mode !== 'brrrr' || state.step !== 4) return;
+    const el = document.getElementById('refi-summary');
+    if (el) el.outerHTML = brrrrRefiSummaryHTML();
+  }
+
   function update(key, val) {
     state.form[key] = val;
     if (key === 'purchasePrice') { state.form.purchasePriceTouched = true; refreshPurchasePriceHint(); }
     renderSidebar();
-    if (state.mode === 'brrrr' && state.step === 4 && key.startsWith('brrrrRefi')) {
-      const el = document.getElementById('refi-summary');
-      if (el) el.outerHTML = brrrrRefiSummaryHTML();
-    }
+    refreshRefiSummary();
     // Step-level live updates
     if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
     if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
