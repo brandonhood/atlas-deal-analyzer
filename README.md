@@ -4,7 +4,7 @@ Single-file deal analyzer (`index.html`) for the Atlas Home Buyers acquisitions 
 
 ## GHL deep-link parameters
 
-The extension builds `https://analyzer.atlashomebuyers.com/?<params>`. Every key is optional; unknown keys are ignored and blank or non-numeric values leave the analyzer field empty (placeholder shown). Numbers may carry `$` / `,` — they are parsed with `parseFloat` after the extension strips formatting. The page always opens in Wholesale mode.
+The extension builds `https://analyzer.atlashomebuyers.com/?<params>`. Every key is optional; unknown keys are ignored and blank or non-numeric values leave the analyzer field empty (placeholder shown). Numeric values must be plain numbers (e.g. `arv=250000`, `rate=6.5`). The analyzer applies `parseFloat` as-is: `250,000` is read as 250 and `$180,000` is dropped (field left blank). The extension extracts the leading number (dropping `$`, `,` and `%` and expanding `150k` to 150000) before building the link, so links it generates are always clean. The page always opens in Wholesale mode.
 
 | Query key | Analyzer field(s) | Notes |
 | --- | --- | --- |
