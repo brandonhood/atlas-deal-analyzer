@@ -1667,6 +1667,18 @@
           <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input js-rent-input" id="f-monthlyRent" placeholder="1,500"></div>
         </div>
       </div>
+      <div class="field-grid-4" style="margin-bottom: 0; margin-top: 4px;">
+        <div>
+          <label class="field-label">Bottom Dollar (Seller Net)</label>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-sellerNet" placeholder="60,000"></div>
+        </div>
+        <div>
+          <label class="field-label">Arrears / Liens</label>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-cfArrearsLiens" placeholder="0"></div>
+        </div>
+        <div></div>
+        <div></div>
+      </div>
     </div>
 
     <!-- MODE SELECTOR -->
@@ -1777,6 +1789,7 @@
       arv: null,
       asIsValue: null,
       mortgageBalance: null,
+      sellerNet: null,        // Seller Bottom Dollar — required net after payoff (NOT a purchase price)
       appreciation: 3,
 
       // Purchase (rental)
@@ -1951,12 +1964,13 @@
 
   // Hook up always-visible property-bar inputs (they persist across modes)
   function bindPropertyBar() {
-    const moneyKeys = ['sqft','arv','asIsValue','mortgageBalance','monthlyRent'];  // formatted text inputs (thousands separators)
-    ['address','sellerName','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance','monthlyRent'].forEach(key => {
+    const moneyKeys = ['sqft','arv','asIsValue','mortgageBalance','monthlyRent','sellerNet','cfArrearsLiens'];  // formatted text inputs (thousands separators)
+    const zeroWhenBlank = ['monthlyRent','cfArrearsLiens'];   // 0-default fields: blank input → 0 (the others → null)
+    ['address','sellerName','beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance','monthlyRent','sellerNet','cfArrearsLiens'].forEach(key => {
       const el = document.getElementById('f-' + key);
       if (!el) return;
       const isMoney = moneyKeys.includes(key);
-      el.value = (state.form[key] == null || (key === 'monthlyRent' && !state.form[key])) ? '' : (isMoney ? fmtInput(state.form[key]) : state.form[key]);
+      el.value = (state.form[key] == null || (zeroWhenBlank.includes(key) && !state.form[key])) ? '' : (isMoney ? fmtInput(state.form[key]) : state.form[key]);
       if (isMoney) el.addEventListener('blur', () => fmtOnBlur(el));
       el.addEventListener('input', () => {
           const raw = el.value;
@@ -1964,7 +1978,7 @@
           if (key === 'address' || key === 'sellerName') {
             state.form[key] = raw;
           } else if (raw === '' || raw == null) {
-            state.form[key] = (key === 'monthlyRent') ? 0 : null;
+            state.form[key] = zeroWhenBlank.includes(key) ? 0 : null;
           } else {
             state.form[key] = isMoney ? parseNum(raw) : (parseFloat(raw) || 0);
             if (key === 'sqft' && state.form[key] < 0) state.form[key] = 0;
@@ -1977,7 +1991,7 @@
           if (key === 'sqft') renderStep();
           if (key === 'address') renderStep();
           if (key === 'monthlyRent') syncRentInputs(state.form.monthlyRent, el);
-          if (state.mode === 'creative' && (key === 'monthlyRent' || key === 'asIsValue')) renderStep();
+          if (state.mode === 'creative' && (key === 'monthlyRent' || key === 'asIsValue' || key === 'cfArrearsLiens')) renderStep();
           if ((state.mode === 'rental' || state.mode === 'brrrr') && state.step === 1) updateRentalEquityCallout();
           if (state.mode === 'wholesale' || state.mode === 'novation') updateOfferCallout();
         });
@@ -2024,6 +2038,10 @@
     if (key === 'includeAtlasFee') renderStep();
     if (key === 'brrrrAcqType') renderStep();
     if (key === 'monthlyRent') syncRentInputs(val, document.activeElement);
+    if (key === 'cfArrearsLiens') {   // same number lives in the property bar — mirror it unless the user is typing there
+      const bar = document.getElementById('f-cfArrearsLiens');
+      if (bar && bar !== document.activeElement) bar.value = val ? fmtInput(val) : '';
+    }
     if (state.mode === 'creative') renderCreativeSummary();
     if (key === 'cfAcqType' || key === 'cfActiveExit' || key === 'cfPlOn' || key === 'cfPlInterestOnly' || key === 'cfSfInterestOnly') renderStep();
   }
@@ -2148,6 +2166,9 @@
     }
     if (mode === 'creative' && (!state.form.cfSubAmount || state.form.cfSubAmount === 0) && state.form.mortgageBalance) {
       state.form.cfSubAmount = state.form.mortgageBalance;  // SubTo balance defaults from GHL mortgage_balance
+    }
+    if (mode === 'creative' && !(state.form.cfCashToSeller > 0) && state.form.sellerNet > 0) {
+      state.form.cfCashToSeller = state.form.sellerNet;     // Cash to Seller defaults from the seller's bottom dollar (net after payoff)
     }
     document.querySelectorAll('.mode-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
@@ -2371,7 +2392,7 @@
       get(target, prop) {
         const v = target[prop];
         // Only coerce these specific GHL-driven numeric fields. Everything else passes through.
-        if (['beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance'].includes(prop)) {
+        if (['beds','baths','sqft','yearBuilt','arv','asIsValue','mortgageBalance','sellerNet'].includes(prop)) {
           return v == null ? 0 : v;
         }
         return v;
@@ -4726,7 +4747,12 @@
   }
 
   // ============ URL PARAMETER INGESTION (GHL deep-link integration) ============
-  // Reads ?address=...&arv=...&as_is=...&mortgage=...&sqft=...&year=...&purchase=...&monthly_rent=...&contact_id=...&contact_name=...
+  // Accepted keys (see README "GHL deep-link parameters"):
+  //   address, beds, baths, sqft, year, arv, as_is, mortgage (→ mortgageBalance + cfSubAmount), purchase,
+  //   monthly_rent / market_rent (→ monthlyRent), bottom_dollar (→ sellerNet; legacy alias: asking),
+  //   arrears (→ cfArrearsLiens), rate (→ cfSubRate), monthly_pi (→ cfSubPI),
+  //   taxes (monthly → cfTaxesMonthly + propertyTaxAnnual ×12), insurance (monthly → cfInsuranceMonthly + insuranceAnnual ×12),
+  //   hoa (monthly → cfHoaMonthly + hoaMonthly), contact_id, contact_name (→ sellerName).
   // Unknown params ignored. Missing params fall back to defaults. Mode always opens to Wholesale per spec.
   const ghlContext = { contactId: null, contactName: null, prefilled: false };
   // opts.propertyFromHash: the #d= hash was saved on top of these same GHL params, so the property fields
@@ -4752,14 +4778,18 @@
       as_is:         v => state.form.asIsValue = num(v),
       mortgage:      v => { const n = num(v); state.form.mortgageBalance = n; if (n != null) state.form.cfSubAmount = n; },
       purchase:      v => { const n = parseFloat(v); if (n) { state.form.purchasePrice = n; state.form.purchasePriceTouched = true; } },   // touched, so Rental/BRRRR keep it instead of re-deriving from As-Is
-      monthly_rent:  v => state.form.monthlyRent = parseFloat(v) || state.form.monthlyRent,
+      monthly_rent:  v => { const n = num(v); if (n != null) state.form.monthlyRent = n; },
+      // Seller Bottom Dollar = required NET proceeds after the mortgage + liens are paid off (not a purchase price)
+      bottom_dollar: v => { const n = num(v); if (n != null) state.form.sellerNet = n; },
+      asking:        v => { const n = num(v); if (n != null && state.form.sellerNet == null) state.form.sellerNet = n; },   // legacy alias for bottom_dollar
       // ----- Creative Finance: auto-fill from GHL mortgage section -----
       rate:          v => { const n = num(v); if (n != null) state.form.cfSubRate = n; },
       monthly_pi:    v => { const n = num(v); if (n != null) state.form.cfSubPI = n; },
       arrears:       v => { const n = num(v); if (n != null) state.form.cfArrearsLiens = n; },
-      taxes:         v => { const n = num(v); if (n != null) state.form.cfTaxesMonthly = n; },
-      insurance:     v => { const n = num(v); if (n != null) state.form.cfInsuranceMonthly = n; },
-      hoa:           v => { const n = num(v); if (n != null) state.form.cfHoaMonthly = n; },
+      // Monthly carry from GHL fans out to the rental/BRRRR expense fields too (annual = monthly × 12)
+      taxes:         v => { const n = num(v); if (n != null) { state.form.cfTaxesMonthly = n; state.form.propertyTaxAnnual = n * 12; } },
+      insurance:     v => { const n = num(v); if (n != null) { state.form.cfInsuranceMonthly = n; state.form.insuranceAnnual = n * 12; } },
+      hoa:           v => { const n = num(v); if (n != null) { state.form.cfHoaMonthly = n; state.form.hoaMonthly = n; } },
       market_rent:   v => { const n = num(v); if (n != null) state.form.monthlyRent = n; },
       contact_id:    v => ghlContext.contactId = v,
       contact_name:  v => {
