@@ -1857,6 +1857,9 @@
       cfActiveExit: 'wrap',          // detail view — must be an included exit
     }
   };
+  // Pristine copy of the form defaults: applyState() coerces restored values against these types,
+  // serializeState() emits only the keys that differ from them (short share links).
+  const FORM_DEFAULTS = JSON.parse(JSON.stringify(state.form));
 
   const STEP_CONFIGS = {
     wholesale: [
@@ -3247,6 +3250,12 @@
     const src = state.form.rehab[from];
     const dst = state.form.rehab[to];
     if (!src || !dst) return;
+    // Copying an empty scope over a populated one wipes it — make sure that is what the user meant
+    const anyOn = rb => Object.keys(rb).some(k => rb[k].on);
+    if (!anyOn(src) && anyOn(dst)) {
+      const names = { wholesale: 'Wholesale', novation: 'Novation', brrrr: 'BRRRR', rental: 'Rental' };
+      if (!window.confirm('Copy an empty scope to ' + (names[to] || to) + '? This clears its rehab lines.')) return;
+    }
     Object.keys(src).forEach(k => {
       if (!dst[k]) { dst[k] = { ...src[k] }; return; }
       dst[k].rate = src[k].rate;
@@ -4690,7 +4699,7 @@
       arv:           v => state.form.arv = num(v),
       as_is:         v => state.form.asIsValue = num(v),
       mortgage:      v => { const n = num(v); state.form.mortgageBalance = n; if (n != null) state.form.cfSubAmount = n; },
-      purchase:      v => state.form.purchasePrice = parseFloat(v) || state.form.purchasePrice,
+      purchase:      v => { const n = parseFloat(v); if (n) { state.form.purchasePrice = n; state.form.purchasePriceTouched = true; } },   // touched, so Rental/BRRRR keep it instead of re-deriving from As-Is
       monthly_rent:  v => state.form.monthlyRent = parseFloat(v) || state.form.monthlyRent,
       // ----- Creative Finance: auto-fill from GHL mortgage section -----
       rate:          v => { const n = num(v); if (n != null) state.form.cfSubRate = n; },
@@ -5041,7 +5050,25 @@
   function serializeState() {
     // ghl: true marks a deal that started from GHL params, so a reload / copied link of that page keeps the
     // user's property-bar edits (hash) instead of letting the stale ?arv=... query re-override them.
-    return { v: 1, mode: state.mode, step: state.step, form: state.form, ghl: !!ghlContext.prefilled };
+    // Only keys that differ from FORM_DEFAULTS are emitted (applyState merges over the defaults at init);
+    // rehab is diffed per mode per line as {rate, on}. view restores the report page from a copied link.
+    const form = {};
+    for (const key of Object.keys(state.form)) {
+      if (key === 'rehab') continue;
+      if (state.form[key] !== FORM_DEFAULTS[key]) form[key] = state.form[key];
+    }
+    const rehab = {};
+    for (const mode of Object.keys(state.form.rehab)) {
+      const defLines = FORM_DEFAULTS.rehab[mode] || {};
+      for (const k of Object.keys(state.form.rehab[mode])) {
+        const line = state.form.rehab[mode][k], def = defLines[k] || {};
+        if (line.rate !== def.rate || line.on !== def.on) (rehab[mode] = rehab[mode] || {})[k] = { rate: line.rate, on: line.on };
+      }
+    }
+    if (Object.keys(rehab).length) form.rehab = rehab;
+    const formView = document.getElementById('form-view');
+    const view = (formView && formView.classList.contains('hidden')) ? 'report' : 'form';
+    return { v: 1, mode: state.mode, step: state.step, form, ghl: !!ghlContext.prefilled, view };
   }
 
   function encodeState(obj) {
@@ -5060,8 +5087,31 @@
     }
   }
 
+  // Scope tiers are mutually exclusive (see updateRehab); a restored deal could carry two — keep the first in order.
+  function normalizeRehabTiers() {
+    const SCOPE_TIERS = ['low_mid_cosmetic', 'mid_high_cosmetic', 'low_mid_gut', 'mid_high_gut'];
+    for (const mode of Object.keys(state.form.rehab)) {
+      const rb = state.form.rehab[mode];
+      let seen = false;
+      for (const k of SCOPE_TIERS) {
+        if (!rb[k] || !rb[k].on) continue;
+        if (seen) rb[k].on = false; else seen = true;
+      }
+    }
+  }
+
   // Copies only keys that already exist in state.form, so fields added later keep their defaults.
+  // Each value is coerced to the type of its default (a corrupted / hand-edited link can't put a string into
+  // a number field); anything that doesn't fit keeps the current value.
   // Rehab is merged per mode / per line (rate + on only) so labels and units stay code-owned.
+  function coerceLike(def, v, cur) {
+    const isNum = typeof v === 'number' && isFinite(v);
+    if (def === null) return (v === null || isNum) ? v : cur;
+    if (typeof def === 'number') return isNum ? v : cur;
+    if (typeof def === 'boolean') return typeof v === 'boolean' ? v : cur;
+    if (typeof def === 'string') return (typeof v === 'string' && v.length <= 500) ? v : cur;
+    return cur;
+  }
   function applyState(obj) {
     if (!obj || typeof obj !== 'object') return false;
     const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
@@ -5069,7 +5119,7 @@
     if (src && typeof src === 'object') {
       for (const key of Object.keys(state.form)) {
         if (!has(src, key)) continue;
-        if (key !== 'rehab') { state.form[key] = src[key]; continue; }
+        if (key !== 'rehab') { state.form[key] = coerceLike(FORM_DEFAULTS[key], src[key], state.form[key]); continue; }
         const rehab = src.rehab;
         if (!rehab || typeof rehab !== 'object') continue;
         for (const mode of Object.keys(state.form.rehab)) {
@@ -5078,8 +5128,9 @@
           for (const lineKey of Object.keys(state.form.rehab[mode])) {
             const line = lines[lineKey];
             if (!line || typeof line !== 'object') continue;
-            if (has(line, 'rate')) state.form.rehab[mode][lineKey].rate = line.rate;
-            if (has(line, 'on')) state.form.rehab[mode][lineKey].on = line.on;
+            const dst = state.form.rehab[mode][lineKey];
+            if (has(line, 'rate') && typeof line.rate === 'number' && isFinite(line.rate)) dst.rate = line.rate;
+            if (has(line, 'on') && typeof line.on === 'boolean') dst.on = line.on;
           }
         }
       }
@@ -5087,6 +5138,7 @@
     if (typeof obj.mode === 'string' && has(STEP_CONFIGS, obj.mode)) state.mode = obj.mode;
     const step = parseInt(obj.step, 10);
     if (step >= 1 && step <= STEP_CONFIGS[state.mode].length) state.step = step;
+    normalizeRehabTiers();
     return true;
   }
 
@@ -5110,6 +5162,9 @@
   document.addEventListener('input', scheduleSave, true);
   document.addEventListener('change', scheduleSave, true);
   document.addEventListener('click', scheduleSave, true);
+  // A debounced save can still be pending on a fast refresh / tab close — flush it
+  window.addEventListener('pagehide', flushSave);
+  window.addEventListener('beforeunload', flushSave);
 
   function copyLink() {
     flushSave();
@@ -5174,9 +5229,11 @@
   // With a shared link, explicit GHL params still override the property fields — unless the hash was itself saved
   // on a GHL-launched page (ghl: true), in which case the hash holds the user's edits and the query only supplies
   // the contact context (banner / save payload).
+  let restoredView = null;                                     // 'report' when the shared link was copied from the report page
   if (location.hash.indexOf('#d=') === 0) {
     const shared = decodeState(location.hash.slice(3));
     const propertyFromHash = !!(applyState(shared) && shared.ghl);
+    if (shared && shared.view === 'report') restoredView = 'report';
     try { ingestUrlParams({ propertyFromHash }); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
   } else if (location.search.length > 1) {
     try { ingestUrlParams(); } catch (e) { console.warn('ingestUrlParams failed; continuing with defaults', e); }
@@ -5190,6 +5247,7 @@
   state.form.purchasePrice = initialPurchasePrice;
   goToStep(initialStep);
   renderGhlBanner();
+  if (restoredView === 'report') generateReport();
   // Programmatic state changes (update(), updateRehab(), mode/step switches) always re-render into #form-view or
   // #report-view, so watch those roots instead of editing each render function. Scoped to the app roots (not body)
   // and started after init, so parser-appended nodes or browser extensions never persist an untouched load.
