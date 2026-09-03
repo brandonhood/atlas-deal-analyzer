@@ -3096,6 +3096,10 @@
     if (!(state.form.arv > 0)) return warnChip('Enter ARV to size the refi.');
     return b.cashOutAtRefi < 0 ? warnChip('Refi loan does not cover the acquisition loan payoff and closing — short by ' + fmt(-b.cashOutAtRefi) + '.', true) : '';
   }
+  // What the seller must pay off at the table: mortgage balance + arrears / liens. "Net to seller" is always price − this.
+  function sellerPayoff(f) { return (f.mortgageBalance || 0) + (f.cfArrearsLiens || 0); }
+  function payoffLabel(f) { return (f.cfArrearsLiens || 0) > 0 ? 'mortgage + liens payoff' : 'mortgage payoff'; }
+
   // Returns [{ key, text, danger }] for the current mode. Keys let a view skip a flag it already shows another way.
   function underwritingFlags(c) {
     const f = state.form, mode = state.mode, flags = [];
@@ -3105,10 +3109,22 @@
     if (mode === 'wholesale' || mode === 'novation') {
       const mao = mode === 'wholesale' ? c.wholesaleMAO : c.novationMAO;
       const hasValue = mode === 'wholesale' ? f.arv > 0 : f.asIsValue > 0;
-      const mortgage = f.mortgageBalance || 0;
+      const payoff = sellerPayoff(f);
       if (!hasValue) flags.push({ key: 'missing-value', text: mode === 'wholesale' ? 'ARV is missing — enter it to price this deal.' : 'As-Is value is missing — enter it to price this deal.', danger: false });
       if (hasValue && !(f.sqft > 0) && sqftLineOn) flags.push({ key: 'sqft', text: 'Square feet is blank — $/sf rehab lines are counting as $0, so this MAO is overstated.', danger: false });
-      if (mortgage > 0 && mao > 0 && mao < mortgage) flags.push({ key: 'mortgage', text: 'MAO is ' + fmt(mortgage - mao) + ' below the mortgage payoff — the seller cannot close at this price without a short sale or bringing cash.', danger: true });
+      if (payoff > 0 && mao > 0 && mao < payoff) flags.push({ key: 'mortgage', text: 'MAO is ' + fmt(payoff - mao) + ' below the ' + payoffLabel(f) + ' — the seller cannot close at this price without a short sale or bringing cash.', danger: true });
+      // Seller Bottom Dollar = required NET after payoff, so it is compared to net-at-MAO, never to MAO itself
+      if (hasValue && mao > 0 && f.sellerNet > 0) {
+        const netAtMao = Math.max(0, mao - payoff);
+        const netAtCeiling = Math.max(0, (mao + 5000) - payoff);
+        if (netAtMao < f.sellerNet) {
+          let text = 'MAO nets the seller ' + fmt(netAtMao) + ' — ' + fmt(f.sellerNet - netAtMao) + ' short of their ' + fmt(f.sellerNet) + ' bottom dollar';
+          text += netAtCeiling >= f.sellerNet ? ' — the ceiling would cover it.' : ', the ceiling (' + fmt(mao + 5000) + ') nets ' + fmt(netAtCeiling) + '.';
+          flags.push({ key: 'bottom-dollar', text, danger: true });
+        } else {
+          flags.push({ key: 'bottom-dollar', text: 'MAO nets the seller ' + fmt(netAtMao) + ', covering their ' + fmt(f.sellerNet) + ' bottom dollar with ' + fmt(netAtMao - f.sellerNet) + ' to spare.', danger: false });
+        }
+      }
     } else if (mode === 'rental' || mode === 'brrrr') {
       const hasRent = f.monthlyRent > 0;
       if (mode === 'brrrr' && !(f.arv > 0)) flags.push({ key: 'missing-value', text: 'Enter ARV to size the refi.', danger: false });
@@ -3132,7 +3148,7 @@
   function offerCalloutHTML(mode, c) {
     const f = state.form;
     const mao = mode === 'wholesale' ? c.wholesaleMAO : c.novationMAO;
-    const mortgage = f.mortgageBalance || 0;
+    const payoff = sellerPayoff(f);   // mortgage balance + arrears / liens
     // The driving value (ARV for wholesale, As-Is for novation) — no value, no price
     const hasValue = mode === 'wholesale' ? f.arv > 0 : f.asIsValue > 0;
     const eyebrow = `<div class="eyebrow">${mode === 'wholesale' ? 'Wholesale' : 'Novation'} Max Allowable Offer</div>`;
@@ -3150,13 +3166,13 @@
       </div>
     `;
     }
-    const netAtMao = Math.max(0, mao - mortgage);
-    const netAtFloor = Math.max(0, (mao - 5000) - mortgage);
-    const netAtCeiling = Math.max(0, (mao + 5000) - mortgage);
-    // Only show the net-to-seller block if the seller actually has a mortgage
-    const hasMortgage = mortgage > 0;
+    const netAtMao = Math.max(0, mao - payoff);
+    const netAtFloor = Math.max(0, (mao - 5000) - payoff);
+    const netAtCeiling = Math.max(0, (mao + 5000) - payoff);
+    // Only show the net-to-seller block if the seller actually has something to pay off
+    const hasMortgage = payoff > 0;
     const netSubLabel = hasMortgage
-      ? `Seller nets <strong>${fmt(netAtMao)}</strong> at table after ${fmt(mortgage)} mortgage payoff`
+      ? `Seller nets <strong>${fmt(netAtMao)}</strong> at table after ${fmt(payoff)} ${payoffLabel(f)}`
       : 'No mortgage on file · MAO equals net to seller';
     return `
       <div id="offer-block">
@@ -3884,6 +3900,7 @@
             <div class="preview-stat"><span class="preview-stat-label">${exitName} Cash-on-Cash</span><span class="preview-stat-val ${coc >= 0 ? 'good':'bad'}">${fmtPct(coc)}</span></div>
           </div>
         </div>
+        ${f.sellerNet > 0 && (f.cfCashToSeller || 0) < f.sellerNet ? warnChip('Cash to seller ' + fmt(f.cfCashToSeller || 0) + ' is below their ' + fmt(f.sellerNet) + ' bottom dollar') : ''}
       </div>
     `;
   }
@@ -4299,7 +4316,7 @@
       sections.insertAdjacentHTML('afterbegin', `
       <div class="card" id="rpt-flags">
         <div class="section-eyebrow">Underwriting Flags</div>
-        <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 4px; color: var(--ink);">Review before sending</h3>
+        <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 4px; color: var(--ink);">Underwriting Flags — review before sending</h3>
         ${flags.map(fl => warnChip(fl.text, fl.danger)).join('')}
       </div>`);
     }
@@ -4307,6 +4324,17 @@
     document.querySelectorAll('.rpt-date').forEach(el => {
       el.textContent = 'Generated ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     });
+  }
+
+  // Report Property Snapshot helpers (wholesale + novation): payoff / bottom-dollar rows, net-to-seller graded against the bottom dollar
+  function snapshotPayoffRowsHTML(f) {
+    return ((f.cfArrearsLiens || 0) > 0 ? `<div class="row"><span class="row-label">Payoff (mortgage + liens)</span><span class="row-val">${fmt(sellerPayoff(f))}</span></div>` : '')
+      + (f.sellerNet > 0 ? `<div class="row"><span class="row-label">Seller Bottom Dollar (net)</span><span class="row-val">${fmt(f.sellerNet)}</span></div>` : '');
+  }
+  function snapshotNetRowHTML(f, mao) {
+    const net = mao - sellerPayoff(f);
+    const cls = f.sellerNet > 0 ? (net >= f.sellerNet ? ' good' : ' bad') : '';
+    return `<div class="row row-bold"><span class="row-label">Net to Seller (@ MAO)</span><span class="row-val${cls}">${fmt(net)}</span></div>`;
   }
 
   function wholesaleReportSectionsHTML(c) {
@@ -4338,9 +4366,10 @@
           <div class="row"><span class="row-label">ARV</span><span class="row-val">${fmt(f.arv)}</span></div>
           <div class="row"><span class="row-label">Spread (ARV − As-Is)</span><span class="row-val">${fmt(f.arv - f.asIsValue)}</span></div>
           <div class="row"><span class="row-label">Mortgage Balance</span><span class="row-val">${fmt(f.mortgageBalance)}</span></div>
+          ${snapshotPayoffRowsHTML(f)}
           <div class="row-divider">
             <div class="row row-bold"><span class="row-label">Seller Equity (@ As-Is)</span><span class="row-val">${fmt(f.asIsValue - f.mortgageBalance)}</span></div>
-            <div class="row row-bold"><span class="row-label">Net to Seller (@ MAO)</span><span class="row-val">${fmt(c.wholesaleMAO - f.mortgageBalance)}</span></div>
+            ${snapshotNetRowHTML(f, c.wholesaleMAO)}
           </div>
         </div>
       </div>
@@ -4383,8 +4412,9 @@
           <div class="row"><span class="row-label">As-Is Value</span><span class="row-val">${fmt(f.asIsValue)}</span></div>
           <div class="row"><span class="row-label">ARV</span><span class="row-val">${fmt(f.arv)}</span></div>
           <div class="row"><span class="row-label">Mortgage Balance</span><span class="row-val">${fmt(f.mortgageBalance)}</span></div>
+          ${snapshotPayoffRowsHTML(f)}
           <div class="row-divider">
-            <div class="row row-bold"><span class="row-label">Net to Seller (@ MAO)</span><span class="row-val">${fmt(c.novationMAO - f.mortgageBalance)}</span></div>
+            ${snapshotNetRowHTML(f, c.novationMAO)}
             <div class="row row-bold"><span class="row-label">vs. Wholesale MAO</span><span class="row-val">${c.novationMAO - c.wholesaleMAO >= 0 ? '+' : ''}${fmt(c.novationMAO - c.wholesaleMAO)}</span></div>
           </div>
         </div>
@@ -4834,6 +4864,7 @@
   const ANALYZER_WEBHOOK_URL = 'https://hook.us2.make.com/u15vyv5j9ubkk42kgkmk55cx8s303jo7';
 
   async function saveDealToGhl(buttonEl) {
+    flushSave();   // make the #d= hash current so share_url restores exactly what was sent
     const c = calculate();
     const f = state.form;
     const mode = state.mode;
@@ -4853,7 +4884,7 @@
         rehab: c.wsRepair,
         rehabber_profit: c.rehabberProfit,
         wholesale_fee: f.wholesaleFee,
-        net_to_seller: Math.max(0, c.wholesaleMAO - f.mortgageBalance),
+        net_to_seller: Math.max(0, c.wholesaleMAO - sellerPayoff(f)),
         mao_to_arv_pct: c.wholesaleMaoArv,
       };
     } else if (mode === 'novation') {
@@ -4862,7 +4893,7 @@
       secondary = {
         rehab: c.novRepair,
         atlas_profit: f.novationProfit,
-        net_to_seller: Math.max(0, c.novationMAO - f.mortgageBalance),
+        net_to_seller: Math.max(0, c.novationMAO - sellerPayoff(f)),
         mao_to_arv_pct: c.novationMaoArv,
       };
     } else if (mode === 'brrrr') {
@@ -4923,6 +4954,7 @@
       source: 'deal-analyzer',
       timestamp: new Date().toISOString(),
       dedup_key: dedupKey,
+      share_url: location.href,   // carries the #d= state hash — opens this exact deal
       ghl: {
         contact_id: ghlContext.contactId,
         contact_name: ghlContext.contactName,
@@ -4932,6 +4964,9 @@
         address: f.address,
         beds: f.beds, baths: f.baths, sqft: f.sqft, year_built: f.yearBuilt,
         arv: f.arv, as_is: f.asIsValue, mortgage_balance: f.mortgageBalance,
+        seller_bottom_dollar: f.sellerNet,          // required NET to seller after payoff (null when unknown)
+        arrears_liens: f.cfArrearsLiens,
+        payoff: sellerPayoff(f),                    // mortgage balance + arrears / liens
         seller_name: f.sellerName || null,
       },
       exit: mode,
