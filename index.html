@@ -3096,7 +3096,10 @@
   }
   // What the seller must pay off at the table: mortgage balance + arrears / liens. "Net to seller" is always price − this.
   function sellerPayoff(f) { return (f.mortgageBalance || 0) + (f.cfArrearsLiens || 0); }
-  function payoffLabel(f) { return (f.cfArrearsLiens || 0) > 0 ? 'mortgage + liens payoff' : 'mortgage payoff'; }
+  function payoffLabel(f) {   // name only the parts that are actually owed
+    const hasMortgage = (f.mortgageBalance || 0) > 0, hasLiens = (f.cfArrearsLiens || 0) > 0;
+    return hasMortgage && hasLiens ? 'mortgage + liens payoff' : hasLiens ? 'liens payoff' : 'mortgage payoff';
+  }
 
   // Returns [{ key, text, danger }] for the current mode. Keys let a view skip a flag it already shows another way.
   function underwritingFlags(c) {
