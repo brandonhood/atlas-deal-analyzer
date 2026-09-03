@@ -1613,7 +1613,7 @@
         </div>
         <div>
           <label class="field-label">Square Feet</label>
-          <input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-sqft" placeholder="1,400" onblur="fmtOnBlur(this)">
+          <input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-sqft" placeholder="1,400">
         </div>
         <div>
           <label class="field-label">Year Built</label>
@@ -1623,21 +1623,21 @@
       <div class="field-grid-4" style="margin-bottom: 0; margin-top: 4px;">
         <div>
           <label class="field-label">After Repair Value (ARV)</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-arv" placeholder="250,000" onblur="fmtOnBlur(this)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-arv" placeholder="250,000"></div>
         </div>
         <div>
           <label class="field-label">As-Is Value</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-asIsValue" placeholder="200,000" onblur="fmtOnBlur(this)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-asIsValue" placeholder="200,000"></div>
           <div class="field-hint" id="as-is-hint">Drives Novation MAO · doubles as Purchase Price in Rental mode</div>
         </div>
         <div>
           <label class="field-label">Mortgage Balance</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-mortgageBalance" placeholder="0" onblur="fmtOnBlur(this)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" id="f-mortgageBalance" placeholder="0"></div>
           <div class="field-hint">Seller's payoff at close</div>
         </div>
         <div>
           <label class="field-label">Rent Rate</label>
-          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input js-rent-input" id="f-monthlyRent" placeholder="1,500" onblur="fmtOnBlur(this)"></div>
+          <div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input js-rent-input" id="f-monthlyRent" placeholder="1,500"></div>
           <div class="field-hint">Market rent · feeds wrap, lease &amp; rental</div>
         </div>
       </div>
@@ -1938,6 +1938,7 @@
             state.form[key] = (key === 'monthlyRent') ? 0 : null;
           } else {
             state.form[key] = isMoney ? parseNum(raw) : (parseFloat(raw) || 0);
+            if (key === 'sqft' && state.form[key] < 0) state.form[key] = 0;
           }
           if (key === 'asIsValue' && (state.mode === 'rental' || state.mode === 'brrrr')) {
             syncPurchasePriceFromAsIs();
@@ -1959,7 +1960,12 @@
       if (lab.htmlFor) return;
       const box = lab.parentElement;
       const ctl = box && box.querySelector("input, select");
-      if (ctl && !ctl.getAttribute("aria-label")) ctl.setAttribute("aria-label", lab.textContent.replace(/\s+/g, " ").trim());
+      if (ctl && !ctl.getAttribute("aria-label")) {
+        // Direct text nodes only, so decorations like "<span>· auto</span>" stay out of the accessible name
+        let name = Array.from(lab.childNodes).filter(n => n.nodeType === 3).map(n => n.textContent).join(" ").replace(/\s+/g, " ").trim();
+        if (!name) name = lab.textContent.replace(/\s+/g, " ").trim();
+        ctl.setAttribute("aria-label", name);
+      }
     });
   }
   ['step-content', 'sidebar-main', 'compare-panel-container'].forEach(id => {
@@ -2008,7 +2014,8 @@
   }
 
   function updateRehab(lineKey, field, val) {
-    // Only touches the rehab bucket for the CURRENT mode (per-mode scope)
+    // Only touches the rehab bucket for the CURRENT mode (per-mode scope). Rates are never negative.
+    if (field === 'rate') val = Math.max(0, parseNum(val));
     getRehab()[lineKey][field] = val;
 
     // Scope tiers describe ONE scope level and are mutually exclusive — turning one on turns the other three off
@@ -2499,8 +2506,8 @@
     const lineRows = Object.keys(rb).map(k => {
       const line = rb[k];
       const rateDisplay = line.unit === 'total'
-        ? `<div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', parseNum(this.value))" onblur="fmtOnBlur(this)"></div>`
-        : `<input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', parseNum(this.value))" onblur="fmtOnBlur(this)">`;
+        ? `<div class="input-money"><input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="fmtOnBlur(this)"></div>`
+        : `<input type="text" inputmode="decimal" autocomplete="off" class="num-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="fmtOnBlur(this)">`;
       return `
         <div class="rehab-row ${line.on ? '' : 'inactive'}">
           <input type="checkbox" ${line.on ? 'checked' : ''} aria-label="${line.label}" onchange="updateRehab('${k}', 'on', this.checked)">
@@ -3052,9 +3059,9 @@
       return `
         <div class="offer-math" id="offer-math">
           <div class="math-row"><span>ARV</span><span>${fmt(f.arv)}</span></div>
-          <div class="math-row"><span>− Repair Cost</span><span>−${fmt(c.repairCost)}</span></div>
-          <div class="math-row"><span>− Rehabber Profit</span><span>−${fmt(c.rehabberProfit)}</span></div>
-          <div class="math-row"><span>− Wholesale Fee</span><span>−${fmt(f.wholesaleFee)}</span></div>
+          <div class="math-row"><span>− Repair Cost</span><span>${fmt(-(c.repairCost))}</span></div>
+          <div class="math-row"><span>− Rehabber Profit</span><span>${fmt(-(c.rehabberProfit))}</span></div>
+          <div class="math-row"><span>− Wholesale Fee</span><span>${fmt(-(f.wholesaleFee))}</span></div>
           <div class="math-row total"><span>Wholesale MAO</span><span>${fmt(c.wholesaleMAO)}</span></div>
           <div class="math-row" style="margin-top:8px; color:var(--ink-4); font-style:italic;"><span>MAO : ARV ratio</span><span>${fmtPct(c.wholesaleMaoArv)}</span></div>
         </div>
@@ -3064,8 +3071,8 @@
         <div class="offer-math" id="offer-math">
           <div class="math-row"><span>As-Is Value</span><span>${fmt(f.asIsValue)}</span></div>
           <div class="math-row"><span>× 88% (covers 12% sale costs)</span><span>${fmt(f.asIsValue * 0.88)}</span></div>
-          <div class="math-row"><span>− Repair Cost</span><span>−${fmt(c.repairCost)}</span></div>
-          <div class="math-row"><span>− Novation Profit</span><span>−${fmt(f.novationProfit)}</span></div>
+          <div class="math-row"><span>− Repair Cost</span><span>${fmt(-(c.repairCost))}</span></div>
+          <div class="math-row"><span>− Novation Profit</span><span>${fmt(-(f.novationProfit))}</span></div>
           <div class="math-row total"><span>Novation MAO</span><span>${fmt(c.novationMAO)}</span></div>
           <div class="math-row" style="margin-top:8px; color:var(--ink-4); font-style:italic;"><span>MAO : ARV ratio</span><span>${fmtPct(c.novationMaoArv)}</span></div>
         </div>
@@ -3099,8 +3106,8 @@
       const line = rb[k];
       // Compact rate input (always visible, inline with label) — for rehab rates per line
       const rateInput = line.unit === 'total'
-        ? `<div class="rate-input-wrap money"><input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', parseNum(this.value))" onblur="fmtOnBlur(this)"></div><span class="unit-label">total</span>`
-        : `<input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', parseNum(this.value))" onblur="fmtOnBlur(this)"><span class="unit-label">$/${line.unit}</span>`;
+        ? `<div class="rate-input-wrap money"><input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="fmtOnBlur(this)"></div><span class="unit-label">total</span>`
+        : `<input type="text" inputmode="decimal" autocomplete="off" class="rate-input" value="${fmtInput(line.rate)}" aria-label="${line.label} rate" oninput="updateRehab('${k}', 'rate', Math.max(0, parseNum(this.value)))" onblur="fmtOnBlur(this)"><span class="unit-label">$/${line.unit}</span>`;
       return `
         <label class="sidebar-rehab-row ${line.on ? '' : 'inactive'}">
           <input type="checkbox" ${line.on ? 'checked' : ''} aria-label="${line.label}" onchange="updateRehab('${k}', 'on', this.checked)">
@@ -3959,7 +3966,7 @@
     const sellerEl = document.getElementById('rpt-seller');
     const sellerName = (f.sellerName || ghlContext.contactName || '').trim();
     if (sellerName) {
-      sellerEl.innerHTML = 'Seller · <strong>' + sellerName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</strong>';
+      sellerEl.innerHTML = 'Seller · <strong>' + escapeHTML(sellerName) + '</strong>';
       sellerEl.style.display = '';
     } else {
       sellerEl.style.display = 'none';
@@ -4168,9 +4175,9 @@
           <div class="section-eyebrow">Deal Math</div>
           <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--ink);">Atlas Wholesale Formula</h3>
           <div class="row"><span class="row-label">After Repair Value</span><span class="row-val">${fmt(f.arv)}</span></div>
-          <div class="row"><span class="row-label">− Repair Cost${f.sqft > 0 ? ' (' + repairPerSf + '/sf)' : ''}</span><span class="row-val">−${fmt(c.repairCost)}</span></div>
-          <div class="row"><span class="row-label">− Rehabber Profit</span><span class="row-val">−${fmt(c.rehabberProfit)}</span></div>
-          <div class="row"><span class="row-label">− Wholesale Fee</span><span class="row-val">−${fmt(f.wholesaleFee)}</span></div>
+          <div class="row"><span class="row-label">− Repair Cost${f.sqft > 0 ? ' (' + repairPerSf + '/sf)' : ''}</span><span class="row-val">${fmt(-(c.repairCost))}</span></div>
+          <div class="row"><span class="row-label">− Rehabber Profit</span><span class="row-val">${fmt(-(c.rehabberProfit))}</span></div>
+          <div class="row"><span class="row-label">− Wholesale Fee</span><span class="row-val">${fmt(-(f.wholesaleFee))}</span></div>
           <div class="row-divider">
             <div class="row row-bold"><span class="row-label">Wholesale MAO</span><span class="row-val">${fmt(c.wholesaleMAO)}</span></div>
             <div class="row row-bold"><span class="row-label">MAO : ARV</span><span class="row-val">${fmtPct(c.wholesaleMaoArv)}</span></div>
@@ -4215,8 +4222,8 @@
           <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--ink);">Atlas Novation Formula</h3>
           <div class="row"><span class="row-label">As-Is Value</span><span class="row-val">${fmt(f.asIsValue)}</span></div>
           <div class="row"><span class="row-label">× 88% (12% sale costs baked in)</span><span class="row-val">${fmt(f.asIsValue * 0.88)}</span></div>
-          <div class="row"><span class="row-label">− Repair Cost${f.sqft > 0 ? ' (' + repairPerSf + '/sf)' : ''}</span><span class="row-val">−${fmt(c.repairCost)}</span></div>
-          <div class="row"><span class="row-label">− Novation Profit</span><span class="row-val">−${fmt(f.novationProfit)}</span></div>
+          <div class="row"><span class="row-label">− Repair Cost${f.sqft > 0 ? ' (' + repairPerSf + '/sf)' : ''}</span><span class="row-val">${fmt(-(c.repairCost))}</span></div>
+          <div class="row"><span class="row-label">− Novation Profit</span><span class="row-val">${fmt(-(f.novationProfit))}</span></div>
           <div class="row-divider">
             <div class="row row-bold"><span class="row-label">Novation MAO</span><span class="row-val">${fmt(c.novationMAO)}</span></div>
             <div class="row row-bold"><span class="row-label">MAO : ARV</span><span class="row-val">${fmtPct(c.novationMaoArv)}</span></div>
@@ -4398,8 +4405,8 @@
           <h3 style="font-family: var(--display); font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--ink);">DSCR Refi Exit</h3>
           <div class="row"><span class="row-label">ARV</span><span class="row-val">${fmt(f.arv)}</span></div>
           <div class="row"><span class="row-label">× Refi LTV (${f.brrrrRefiLtv}%)</span><span class="row-val">${fmt(b.refiLoan)}</span></div>
-          <div class="row"><span class="row-label">− Acq Loan Payoff</span><span class="row-val">−${fmt(b.acqLoan)}</span></div>
-          <div class="row"><span class="row-label">− Refi Closing (${f.brrrrRefiClosingPct}%)</span><span class="row-val">−${fmt(b.refiClosing)}</span></div>
+          <div class="row"><span class="row-label">− Acq Loan Payoff</span><span class="row-val">${fmt(-(b.acqLoan))}</span></div>
+          <div class="row"><span class="row-label">− Refi Closing (${f.brrrrRefiClosingPct}%)</span><span class="row-val">${fmt(-(b.refiClosing))}</span></div>
           <div class="row-divider">
             <div class="row row-bold"><span class="row-label">Cash Out at Refi</span><span class="row-val" style="color:var(--good);">${fmt(b.cashOutAtRefi)}</span></div>
           </div>
@@ -4777,7 +4784,7 @@
         grade: (mode === 'brrrr' || mode === 'rental') ? c.grade : null,
         secondary,
       },
-      // Full calc for downstream extensibility — Zap can pull anything it needs
+      // Full calc for downstream extensibility — the Make scenario can pull anything it needs
       full_calc: {
         ws_mao: Math.round(c.wholesaleMAO),
         nov_mao: Math.round(c.novationMAO),
@@ -5077,7 +5084,7 @@
     const banner = document.getElementById('ghl-banner');
     if (!banner) return;
     const addr = (state.form.address || '').trim();
-    const label = addr ? addr.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : 'Untitled deal';
+    const label = addr ? escapeHTML(addr) : 'Untitled deal';
     banner.innerHTML = `
       <span class="ghl-banner-dot"></span>
       <span class="ghl-banner-text">Restored your last deal · <strong>${label}</strong></span>
